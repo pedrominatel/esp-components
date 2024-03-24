@@ -1,0 +1,5 @@
+version: "1.0.0"
+description: I2C driver for the MC3479 3-axis accelerometer
+url: https://github.com/pedrominatel/esp-components
+dependencies:
+  idf : ">=5.0"

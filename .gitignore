@@ -1,52 +1,108 @@
-# Prerequisites
-*.d
-
-# Object files
+.config
 *.o
-*.ko
-*.obj
-*.elf
+*.pyc
 
-# Linker output
-*.ilk
-*.map
-*.exp
+# gtags
+GTAGS
+GRTAGS
+GPATH
 
-# Precompiled Headers
-*.gch
-*.pch
+# emacs
+.dir-locals.el
 
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
+# emacs temp file suffixes
+*~
+.#*
+\#*#
 
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
+# eclipse setting
+.settings
 
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
+# MacOS directory files
+.DS_Store
 
-# Debug files
-*.dSYM/
-*.su
-*.idb
-*.pdb
+# cache dir
+.cache/
 
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
+# Doc build artifacts
+docs/_build/
+docs/doxygen_sqlite3.db
+
+# Downloaded font files
+docs/_static/DejaVuSans.ttf
+docs/_static/NotoSansSC-Regular.otf
+
+# Components Unit Test Apps files
+components/**/build/
+components/**/build_*_*/
+components/**/sdkconfig
+components/**/sdkconfig.old
+
+# Example project files
+examples/**/build/
+examples/**/build_*_*/
+examples/**/sdkconfig
+examples/**/sdkconfig.old
+
+# Unit test app files
+tools/unit-test-app/build
+tools/unit-test-app/build_*_*/
+tools/unit-test-app/sdkconfig
+tools/unit-test-app/sdkconfig.old
+
+# test application build files
+tools/test_apps/**/build/
+tools/test_apps/**/build_*_*/
+tools/test_apps/**/sdkconfig
+tools/test_apps/**/sdkconfig.old
+
+TEST_LOGS/
+build_summary_*.xml
+
+# gcov coverage reports
+*.gcda
+*.gcno
+coverage.info
+coverage_report/
+
+test_multi_heap_host
+
+# VS Code Settings
+.vscode/
+
+# VIM files
+*.swp
+*.swo
+
+# Sublime Text files
+*.sublime-project
+*.sublime-workspace
+
+# Clion IDE CMake build & config
+.idea/
+cmake-build-*/
+
+# Results for the checking of the Python coding style and static analysis
+.mypy_cache
+flake8_output.txt
+
+# ESP-IDF default build directory name
+build
+
+# lock files for examples and components
+dependencies.lock
+
+# managed_components for examples
+managed_components
+
+# pytest log
+pytest_embedded_log/
+list_job*.txt
+size_info*.txt
+XUNIT_RESULT*.xml
+
+# clang config (for LSP)
+.clangd
+
+# Vale
+.vale/styles/*
