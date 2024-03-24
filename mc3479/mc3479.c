@@ -143,25 +143,39 @@ esp_err_t mc3479_get_range(mc3479_handle_t sensor, uint8_t *range)
 esp_err_t mc3479_set_range(mc3479_handle_t sensor, uint8_t range)
 {
     esp_err_t ret;
+    uint8_t value;
+
     // Set mode to standby before changing range
-    ret = mc3479_get_mode(sensor, MC3479_MODE_SLEEP);
-    ret =  mc3479_write(sensor, MC3479_RANGE, &range, 1);
+    ret = mc3479_set_mode(sensor, MC3479_MODE_SLEEP);
+
+    // Read the current range value
+    ret = mc3479_read(sensor, MC3479_RANGE, &value, 1);
+    value &= 0b00000111;
+    value |= (range << 4) & 0x70;
+    // Write the new value to the range register
+    ret = mc3479_write(sensor, MC3479_RANGE, &value, 1);
 
     return ret;
 }
 
-esp_err_t mc3479_get_sample_rate(mc3479_handle_t sensor, uint8_t *range)
+esp_err_t mc3479_get_sample_rate(mc3479_handle_t sensor, uint8_t *sr)
 {
-    return mc3479_read(sensor, MC3479_SAMPLE_RATE, range, 1);
+    return mc3479_read(sensor, MC3479_SAMPLE_RATE, sr, 1);
 }
 
-esp_err_t mc3479_set_sample_rate(mc3479_handle_t sensor, uint8_t range)
+esp_err_t mc3479_set_sample_rate(mc3479_handle_t sensor, uint8_t sr)
 {
     esp_err_t ret;
+    uint8_t value;
+
     // Set mode to standby before changing range
-    ret = mc3479_get_mode(sensor, MC3479_MODE_SLEEP);
-    
-    ret = mc3479_write(sensor, MC3479_SAMPLE_RATE, &range, 1);
+    ret = mc3479_set_mode(sensor, MC3479_MODE_SLEEP);
+
+    // Read the current rate value
+    ret = mc3479_read(sensor, MC3479_SAMPLE_RATE, &value, 1);
+    value &= 0b00000000;
+    value |= sr;
+    ret = mc3479_write(sensor, MC3479_SAMPLE_RATE, &value, 1);
     
     return ret;
 }
