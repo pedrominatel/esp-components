@@ -48,11 +48,17 @@ static esp_err_t mc3479_write(mc3479_handle_t sensor, const uint8_t reg_start_ad
 
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     ret = i2c_master_start(cmd);
+    assert(ESP_OK == ret);
     ret = i2c_master_write_byte(cmd, mc3479->dev_addr, true);
+    assert(ESP_OK == ret);
     ret = i2c_master_write_byte(cmd, reg_start_addr, true);
+    assert(ESP_OK == ret);
     ret = i2c_master_write(cmd, data_buf, data_len, true);
+    assert(ESP_OK == ret);
     ret = i2c_master_stop(cmd);
+    assert(ESP_OK == ret);
     ret = i2c_master_cmd_begin(mc3479->bus, cmd, 1000 / portTICK_PERIOD_MS);
+    assert(ESP_OK == ret);
     i2c_cmd_link_delete(cmd);
 
     return ret;
@@ -75,13 +81,21 @@ static esp_err_t mc3479_read(mc3479_handle_t sensor, const uint8_t reg_start_add
 
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     ret = i2c_master_start(cmd);
+    assert(ESP_OK == ret);
     ret = i2c_master_write_byte(cmd, mc3479->dev_addr, true);
+    assert(ESP_OK == ret);
     ret = i2c_master_write_byte(cmd, reg_start_addr, true);
+    assert(ESP_OK == ret);
     ret = i2c_master_start(cmd);
+    assert(ESP_OK == ret);
     ret = i2c_master_write_byte(cmd, mc3479->dev_addr | 1, true);
+    assert(ESP_OK == ret);
     ret = i2c_master_read(cmd, data_buf, data_len, I2C_MASTER_LAST_NACK);
+    assert(ESP_OK == ret);
     ret = i2c_master_stop(cmd);
+    assert(ESP_OK == ret);
     ret = i2c_master_cmd_begin(mc3479->bus, cmd, 1000 / portTICK_PERIOD_MS);
+    assert(ESP_OK == ret);
     i2c_cmd_link_delete(cmd);
     
     return ret;
@@ -147,7 +161,6 @@ esp_err_t mc3479_set_range(mc3479_handle_t sensor, uint8_t range)
 
     // Set mode to standby before changing range
     ret = mc3479_set_mode(sensor, MC3479_MODE_SLEEP);
-
     // Read the current range value
     ret = mc3479_read(sensor, MC3479_RANGE, &value, 1);
     value &= 0b00000111;
@@ -170,7 +183,6 @@ esp_err_t mc3479_set_sample_rate(mc3479_handle_t sensor, uint8_t sr)
 
     // Set mode to standby before changing range
     ret = mc3479_set_mode(sensor, MC3479_MODE_SLEEP);
-
     // Read the current rate value
     ret = mc3479_read(sensor, MC3479_SAMPLE_RATE, &value, 1);
     value &= 0b00000000;

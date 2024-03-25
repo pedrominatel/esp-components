@@ -47,9 +47,10 @@ static void i2c_bus_init(void)
         .master.clk_speed = I2C_MASTER_CLK_SPEED,
     };
 
-    err= i2c_param_config(I2C_MASTER_NUM, &conf);
+    err = i2c_param_config(I2C_MASTER_NUM, &conf);
+    assert(ESP_OK == err);
     err = i2c_driver_install(I2C_MASTER_NUM, conf.mode, 0, 0, 0);
-
+    
     if(err != ESP_OK)
     {
         ESP_LOGE(TAG, "I2C bus initialization failed");
@@ -80,7 +81,7 @@ static void mc3479_sensor_start(void)
     mc3479_config_t cfg;
 
     // Set and check the range
-    mc3479_set_range(sensor, MC3479_RANGE_8G);
+    mc3479_set_range(sensor, MC3479_RANGE_2G);
     mc3479_get_range(sensor, &cfg.range);
     ESP_LOGI(TAG, "Range: %d", cfg.range);
     // Set and check the sample rate
@@ -114,7 +115,6 @@ static void mc3479_sensor_start(void)
     {
         mc3479_set_mode(sensor, MC3479_MODE_CWAKE);
     }
-
 
     // Create a task to read the sensor values
     xTaskCreatePinnedToCore(&mc3479_task, "mc3479_task", 2048, NULL, 5, NULL, 1);
