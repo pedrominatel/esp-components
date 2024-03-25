@@ -195,6 +195,26 @@ esp_err_t mc3479_get_motion(mc3479_handle_t sensor, uint8_t *motion)
     return mc3479_read(sensor, MC3479_MOTION_CTRL, motion, 1);
 }
 
+esp_err_t mc3479_set_motion(mc3479_handle_t sensor, mc3479_motion_t motion)
+{
+    
+    esp_err_t ret;
+    uint8_t motion_register = 0;
+
+    motion_register |= motion.MOTION_RESET << 7;
+    motion_register |= motion.RAW_PROC_STAT << 6;
+    motion_register |= motion.Z_AXIS_ORT << 5;
+    motion_register |= motion.TILT_35 << 4;
+    motion_register |= motion.SHAKE << 3;
+    motion_register |= motion.ANY_MOTION << 2;
+    motion_register |= motion.MOTION_LATCH << 1;
+    motion_register |= motion.TF;
+
+    ret = mc3479_write(sensor, MC3479_MOTION_CTRL, &motion_register, 1);
+    
+    return ret;
+}
+
 esp_err_t mc3479_get_acceleration(mc3479_handle_t sensor, int16_t *x, int16_t *y, int16_t *z)
 {
     uint8_t data[6];

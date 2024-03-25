@@ -74,33 +74,19 @@ static void mc3479_sensor_denit(void)
     mc3479_delete(sensor);
 }
 
-void app_main(void)
+static void mc3479_sensor_start(void)
 {
-
-    esp_err_t err = ESP_OK;
-
-    uint8_t chip_id;
+    
     mc3479_config_t cfg;
 
-    mc3479_sensor_init();
-    err = mc3479_get_chip_id(sensor, &chip_id);
-
-    if(err != ESP_OK)
-    {
-        ESP_LOGE(TAG, "Failed to get chip id");
-        return;
-    }
-
-    ESP_LOGI(TAG, "Chip ID: 0x%02x", chip_id);
-    // Compare the chip if to the default value
-    if(chip_id == MC3479_DEFAULT_CHIP_ID)
-    {
-        ESP_LOGI(TAG, "Chip ID is correct");
-    }
-    else
-    {
-        ESP_LOGE(TAG, "Chip ID is incorrect");
-    }
+    // Set and check the range
+    mc3479_set_range(sensor, MC3479_RANGE_8G);
+    mc3479_get_range(sensor, &cfg.range);
+    ESP_LOGI(TAG, "Range: %d", cfg.range);
+    // Set and check the sample rate
+    mc3479_set_sample_rate(sensor, MC3479_SAMPLE_100Hz);
+    mc3479_get_sample_rate(sensor, &cfg.sample_rate);
+    ESP_LOGI(TAG, "Sample rate: %d", cfg.sample_rate);
 
     // Get the mode
     mc3479_get_mode(sensor, &cfg.mode);
@@ -124,18 +110,43 @@ void app_main(void)
         break;
     }
 
-    mc3479_get_range(sensor, &cfg.range);
-    ESP_LOGI(TAG, "Range: %d", cfg.range);
+    if(cfg.mode == MC3479_MODE_SLEEP)
+    {
+        mc3479_set_mode(sensor, MC3479_MODE_CWAKE);
+    }
 
-    mc3479_get_sample_rate(sensor, &cfg.sample_rate);
-    ESP_LOGI(TAG, "Sample rate: %d", cfg.sample_rate);
-
-    // Set the mode to Continuous Wake
-    // mc3479_set_mode(sensor, MC3479_MODE_CWAKE);
 
     // Create a task to read the sensor values
-    // xTaskCreatePinnedToCore(&mc3479_task, "mc3479_task", 2048, NULL, 5, NULL, 1);
+    xTaskCreatePinnedToCore(&mc3479_task, "mc3479_task", 2048, NULL, 5, NULL, 1);
 
-    // Deinitialize the sensor
-    //mc3479_sensor_denit();
+}
+
+void app_main(void)
+{
+
+    esp_err_t err = ESP_OK;
+
+    uint8_t chip_id;
+    
+    mc3479_sensor_init();
+    err = mc3479_get_chip_id(sensor, &chip_id);
+
+    if(err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to get chip id");
+        return;
+    }
+
+    ESP_LOGI(TAG, "Chip ID: 0x%02x", chip_id);
+    // Compare the chip if to the default value
+    if(chip_id == MC3479_DEFAULT_CHIP_ID)
+    {
+        ESP_LOGI(TAG, "Chip ID is correct");
+        // If the sonsor is connected, start the sensor
+        mc3479_sensor_start();
+    }
+    else
+    {
+        ESP_LOGE(TAG, "Chip ID is incorrect");
+    }
 }

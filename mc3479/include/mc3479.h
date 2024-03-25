@@ -109,13 +109,25 @@ typedef enum
   MC3479_SAMPLE_2000Hz      = 0x16,
 }   mc3479_sample_t;
 
+typedef struct
+{
+  bool TF;
+  bool MOTION_LATCH;
+  bool ANY_MOTION;
+  bool SHAKE;
+  bool TILT_35;
+  bool Z_AXIS_ORT;
+  bool RAW_PROC_STAT;
+  bool MOTION_RESET;
+}   mc3479_motion_t;
+
 // Configuration structure
 typedef struct
 {
   uint8_t mode;
   uint8_t range;
   uint8_t sample_rate;
-} mc3479_config_t;
+}   mc3479_config_t;
 
 
 
@@ -138,6 +150,9 @@ esp_err_t mc3479_set_range(mc3479_handle_t sensor, uint8_t range);
 
 esp_err_t mc3479_get_sample_rate(mc3479_handle_t sensor, uint8_t *range);
 esp_err_t mc3479_set_sample_rate(mc3479_handle_t sensor, uint8_t range);
+
+esp_err_t mc3479_get_motion(mc3479_handle_t sensor, uint8_t *motion);
+esp_err_t mc3479_set_motion(mc3479_handle_t sensor, mc3479_motion_t motion);
 
 #ifdef __cplusplus
 }
