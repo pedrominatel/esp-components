@@ -2,5 +2,6 @@
 
 This library includes:
 
-* MC3479
-* MAX17055
+* MC3479 (WIP)
+* T9602 (WIP)
+* MAX17055 (WIP)
