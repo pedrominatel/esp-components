@@ -121,6 +121,30 @@ typedef struct
   bool MOTION_RESET;
 }   mc3479_motion_t;
 
+typedef struct
+{
+  bool TILT_INT;
+  bool FLIP_INT;
+  bool ANYM_INT;
+  bool SHAKE_INT;
+  bool TILT_35_INT;
+  bool RESERVED;
+  bool AUTO_CLR;
+  bool ACQ_INT;
+}   mc3479_motion_intr_t;
+
+typedef struct
+{
+  bool TILT_INT;
+  bool FLIP_INT;
+  bool ANYM_INT;
+  bool SHAKE_INT;
+  bool TILT_35_INT;
+  bool FIFO;
+  bool RESERVED;
+  bool ACQ_INT;
+}   mc3479_motion_intr_status_t;
+
 // Configuration structure
 typedef struct
 {
@@ -129,7 +153,17 @@ typedef struct
   uint8_t sample_rate;
 }   mc3479_config_t;
 
-
+typedef struct
+{
+  bool RESERVED_0;
+  bool RESERVED_1;
+  bool GPIO1_INTN1_IAH;
+  bool GPIO1_INTN1_IPP;
+  bool RESERVED_4;
+  bool RESERVED_5;
+  bool GPIO2_INTN2_IAH;
+  bool GPIO2_INTN2_IPP;
+}   mc3479_gpio_intr_t;
 
 typedef void *mc3479_handle_t;
 
@@ -153,6 +187,15 @@ esp_err_t mc3479_set_sample_rate(mc3479_handle_t sensor, uint8_t range);
 
 esp_err_t mc3479_get_motion(mc3479_handle_t sensor, uint8_t *motion);
 esp_err_t mc3479_set_motion(mc3479_handle_t sensor, mc3479_motion_t motion);
+
+esp_err_t mc3479_get_motion_intr(mc3479_handle_t sensor, uint8_t *motion_intr);
+esp_err_t mc3479_set_motion_intr(mc3479_handle_t sensor, mc3479_motion_intr_t motion_intr);
+
+esp_err_t mc3479_set_gpio_intr(mc3479_handle_t sensor, mc3479_gpio_intr_t gpio_intr);
+
+esp_err_t mc3479_get_status_reg(mc3479_handle_t sensor, uint8_t *status_reg);
+esp_err_t mc3479_get_interrupt_status_reg(mc3479_handle_t sensor, uint8_t *intr_status_reg);
+esp_err_t mc3479_clean_all_interrupts(mc3479_handle_t sensor);
 
 #ifdef __cplusplus
 }

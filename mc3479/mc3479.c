@@ -61,6 +61,10 @@ static esp_err_t mc3479_write(mc3479_handle_t sensor, const uint8_t reg_start_ad
     assert(ESP_OK == ret);
     i2c_cmd_link_delete(cmd);
 
+    printf("Write data to the register of the sensor\n");
+    printf("reg_start_addr: 0x%02x\n", reg_start_addr);
+    printf("data_buf: 0x%02x\n", *data_buf);
+
     return ret;
 }
 
@@ -138,22 +142,50 @@ esp_err_t mc3479_get_chip_id(mc3479_handle_t sensor, uint8_t *const deviceid)
     return mc3479_read(sensor, MC3479_CHIP_ID, deviceid, 1);
 }
 
+/* Get the mode of the sensor
+    * @param sensor object
+    * @param mode mode
+    * @return
+    *     - ESP_OK Success
+    *     - ESP_FAIL Fail
+*/
 esp_err_t mc3479_get_mode(mc3479_handle_t sensor, uint8_t *mode)
 {
     esp_err_t ret = mc3479_read(sensor, MC3479_MODE_CTRL, mode, 1);
     return ret;
 }
 
+/* Set the mode of the sensor
+    * @param sensor object
+    * @param mode mode
+    * @return
+    *     - ESP_OK Success
+    *     - ESP_FAIL Fail
+*/
 esp_err_t mc3479_set_mode(mc3479_handle_t sensor, uint8_t mode)
 {
     return mc3479_write(sensor, MC3479_MODE_CTRL, &mode, 1);
 }
 
+/* Get the range of the sensor
+    * @param sensor object
+    * @param range range
+    * @return
+    *     - ESP_OK Success
+    *     - ESP_FAIL Fail
+*/
 esp_err_t mc3479_get_range(mc3479_handle_t sensor, uint8_t *range)
 {
     return mc3479_read(sensor, MC3479_RANGE, range, 1);
 }
 
+/* Set the range of the sensor
+    * @param sensor object
+    * @param range range
+    * @return
+    *     - ESP_OK Success
+    *     - ESP_FAIL Fail
+*/
 esp_err_t mc3479_set_range(mc3479_handle_t sensor, uint8_t range)
 {
     esp_err_t ret;
@@ -171,11 +203,25 @@ esp_err_t mc3479_set_range(mc3479_handle_t sensor, uint8_t range)
     return ret;
 }
 
+/* Get the sample rate of the sensor
+    * @param sensor object
+    * @param sr sample rate
+    * @return
+    *     - ESP_OK Success
+    *     - ESP_FAIL Fail
+*/
 esp_err_t mc3479_get_sample_rate(mc3479_handle_t sensor, uint8_t *sr)
 {
     return mc3479_read(sensor, MC3479_SAMPLE_RATE, sr, 1);
 }
 
+/* Set the sample rate of the sensor
+    * @param sensor object
+    * @param sr sample rate
+    * @return
+    *     - ESP_OK Success
+    *     - ESP_FAIL Fail
+*/
 esp_err_t mc3479_set_sample_rate(mc3479_handle_t sensor, uint8_t sr)
 {
     esp_err_t ret;
@@ -192,11 +238,25 @@ esp_err_t mc3479_set_sample_rate(mc3479_handle_t sensor, uint8_t sr)
     return ret;
 }
 
+/* Get the status of the sensor
+    * @param sensor object
+    * @param status status
+    * @return
+    *     - ESP_OK Success
+    *     - ESP_FAIL Fail
+*/
 esp_err_t mc3479_get_status(mc3479_handle_t sensor, uint8_t *status)
 {
     return mc3479_read(sensor, MC3479_STATUS_REG, status, 1);
 }
 
+/* Get the interrupt status of the sensor
+    * @param sensor object
+    * @param status interrupt status
+    * @return
+    *     - ESP_OK Success
+    *     - ESP_FAIL Fail
+*/
 esp_err_t mc3479_get_interrupt_status(mc3479_handle_t sensor, uint8_t *status)
 {
     return mc3479_read(sensor, MC3479_INTR_STATUS, status, 1);
@@ -207,6 +267,52 @@ esp_err_t mc3479_get_motion(mc3479_handle_t sensor, uint8_t *motion)
     return mc3479_read(sensor, MC3479_MOTION_CTRL, motion, 1);
 }
 
+/* Get the motion interrupt of the sensor
+    * @param sensor object
+    * @param motion_intr motion interrupt
+    * @return
+    *     - ESP_OK Success
+    *     - ESP_FAIL Fail
+*/
+esp_err_t mc3479_get_motion_intr(mc3479_handle_t sensor, uint8_t *motion_intr)
+{
+    return mc3479_read(sensor, MC3479_INTR_CTRL, motion_intr, 1);
+}
+
+/* Set the motion interrupt of the sensor
+    * @param sensor object
+    * @param motion_intr motion interrupt
+    * @return
+    *     - ESP_OK Success
+    *     - ESP_FAIL Fail
+*/
+esp_err_t mc3479_set_motion_intr(mc3479_handle_t sensor, mc3479_motion_intr_t motion_intr)
+{
+    
+    esp_err_t ret;
+    uint8_t intr_motion_register = 0;
+
+    intr_motion_register |= motion_intr.ACQ_INT << 7;
+    intr_motion_register |= motion_intr.AUTO_CLR << 6;
+    intr_motion_register |= motion_intr.RESERVED << 5;
+    intr_motion_register |= motion_intr.TILT_35_INT << 4;
+    intr_motion_register |= motion_intr.SHAKE_INT << 3;
+    intr_motion_register |= motion_intr.ANYM_INT << 2;
+    intr_motion_register |= motion_intr.FLIP_INT << 1;
+    intr_motion_register |= motion_intr.TILT_INT;
+
+    ret = mc3479_write(sensor, MC3479_INTR_CTRL, &intr_motion_register, 1);
+    
+    return ret;
+}
+
+/* Set the motion of the sensor
+    * @param sensor object
+    * @param motion motion
+    * @return
+    *     - ESP_OK Success
+    *     - ESP_FAIL Fail
+*/
 esp_err_t mc3479_set_motion(mc3479_handle_t sensor, mc3479_motion_t motion)
 {
     
@@ -227,6 +333,41 @@ esp_err_t mc3479_set_motion(mc3479_handle_t sensor, mc3479_motion_t motion)
     return ret;
 }
 
+/* Set the GPIO interrupt of the sensor
+    * @param sensor object
+    * @param gpio_intr GPIO interrupt
+    * @return
+    *     - ESP_OK Success
+    *     - ESP_FAIL Fail
+*/
+esp_err_t mc3479_set_gpio_intr(mc3479_handle_t sensor, mc3479_gpio_intr_t gpio_intr)
+{
+    esp_err_t ret;
+    uint8_t intr_gpio_register = 0;
+
+    intr_gpio_register |= gpio_intr.GPIO2_INTN2_IPP << 7;
+    intr_gpio_register |= gpio_intr.GPIO2_INTN2_IAH << 6;
+    intr_gpio_register |= gpio_intr.RESERVED_5 << 5;
+    intr_gpio_register |= gpio_intr.RESERVED_4 << 4;
+    intr_gpio_register |= gpio_intr.GPIO1_INTN1_IPP << 3;
+    intr_gpio_register |= gpio_intr.GPIO1_INTN1_IAH << 2;
+    intr_gpio_register |= gpio_intr.RESERVED_1 << 1;
+    intr_gpio_register |= gpio_intr.RESERVED_0;
+
+    ret = mc3479_write(sensor, MC3479_GPIO_CTRL, &intr_gpio_register, 1);
+    
+    return ret;
+}
+
+/* Get the acceleration of the sensor
+    * @param sensor object
+    * @param x x-axis acceleration
+    * @param y y-axis acceleration
+    * @param z z-axis acceleration
+    * @return
+    *     - ESP_OK Success
+    *     - ESP_FAIL Fail
+*/
 esp_err_t mc3479_get_acceleration(mc3479_handle_t sensor, int16_t *x, int16_t *y, int16_t *z)
 {
     uint8_t data[6];
@@ -238,4 +379,68 @@ esp_err_t mc3479_get_acceleration(mc3479_handle_t sensor, int16_t *x, int16_t *y
     *y = (int16_t) ((data[3] << 8) | data[2]);
     *z = (int16_t) ((data[5] << 8) | data[4]);
     return ESP_OK;
+}
+
+/* Get the status register of the sensor
+    * @param sensor object
+    * @param status_reg status register
+    * @return
+    *     - ESP_OK Success
+    *     - ESP_FAIL Fail
+*/
+esp_err_t mc3479_get_status_reg(mc3479_handle_t sensor, uint8_t *status_reg)
+{
+    return mc3479_read(sensor, MC3479_STATUS_REG, status_reg, 1);
+}
+
+/* Get the interrupt status register of the sensor
+    * @param sensor object
+    * @param intr_status_reg interrupt status register
+    * @return
+    *     - ESP_OK Success
+    *     - ESP_FAIL Fail
+*/
+esp_err_t mc3479_get_interrupt_status_reg(mc3479_handle_t sensor, uint8_t *intr_status_reg)
+{
+    return mc3479_read(sensor, MC3479_INTR_STATUS, intr_status_reg, 1);
+}
+
+/* Write the interrupt status register of the sensor
+    * @param sensor object
+    * @param intr_status_reg interrupt status register
+    * @return
+    *     - ESP_OK Success
+    *     - ESP_FAIL Fail
+*/
+esp_err_t mc3479_write_interrupt_status_reg(mc3479_handle_t sensor, mc3479_motion_intr_status_t intr_status_reg)
+{
+    esp_err_t ret;
+    uint8_t intr_status_register = 0;
+
+    intr_status_register |= intr_status_reg.ACQ_INT << 7;
+    intr_status_register |= intr_status_reg.RESERVED << 6;
+    intr_status_register |= intr_status_reg.FIFO << 5;
+    intr_status_register |= intr_status_reg.TILT_35_INT << 4;
+    intr_status_register |= intr_status_reg.SHAKE_INT << 3;
+    intr_status_register |= intr_status_reg.ANYM_INT << 2;
+    intr_status_register |= intr_status_reg.FLIP_INT << 1;
+    intr_status_register |= intr_status_reg.TILT_INT;
+
+    ret = mc3479_write(sensor, MC3479_INTR_STATUS, &intr_status_register, 1);
+    
+    return ret;
+}
+
+/* Clean all interrupts of the sensor
+    * @param sensor object
+    * @return
+    *     - ESP_OK Success
+    *     - ESP_FAIL Fail
+*/
+esp_err_t mc3479_clean_all_interrupts(mc3479_handle_t sensor)
+{
+    esp_err_t ret;
+    uint8_t status_reg = 0x00;
+    ret = mc3479_write(sensor, MC3479_INTR_STATUS, &status_reg, 1);
+    return ret;
 }

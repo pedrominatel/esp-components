@@ -1,5 +1,17 @@
-version: "1.0.0"
-description: I2C driver for the MC3479 3-axis accelerometer
-url: https://github.com/pedrominatel/esp-components
+version: 0.0.1
+targets:
+  - esp32
+  - esp32s2
+  - esp32s3
+  - esp32c3
+  - esp32c2
+  - esp32c6
+  - esp32h2
+description: MC3479 3-axis accelerometer driver for ESP-IDF
+url: https://github.com/pedrominatel/esp-components/tree/main/mc3479
+repository: https://github.com/pedrominatel/esp-components.git
+issues: https://github.com/pedrominatel/esp-components/issues
 dependencies:
   idf : ">=5.0"
+examples:
+  - path: ../examples/example_mc3479
