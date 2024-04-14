@@ -106,3 +106,10 @@ XUNIT_RESULT*.xml
 
 # Vale
 .vale/styles/*
+
+build
+sdkconfig
+sdkconfig.old
+dependencies.lock
+dist
+doxygen

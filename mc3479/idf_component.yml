@@ -15,6 +15,3 @@ maintainers:
   - "Pedro Minatel <pminatel@gmail.com>"
 dependencies:
   idf : ">=5.0"
-examples:
-  - path: ../examples/example_mc3479_basic
-  - path: ../examples/example_mc3479_anymotion
