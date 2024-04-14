@@ -125,3 +125,32 @@ t9602_handle_t t9602_create(i2c_port_t port, const uint16_t dev_addr)
     sensor->timer = (struct timeval *) malloc(sizeof(struct timeval));
     return (t9602_handle_t) sensor;
 }
+
+/* Get the sensor data
+    * @param sensor object
+    * @param temperature temperature value
+    * @param humidity humidity value
+    * @return sensor object
+*/
+t9602_handle_t t9602_get_data(t9602_handle_t sensor, float *temperature, float *humidity)
+{
+
+    esp_err_t ret = ESP_OK;
+    uint8_t data[4] = {0};
+    uint16_t raw_temperature = 0;
+    uint16_t raw_humidity = 0;
+
+    ret = t9602_read(sensor, T9602_DATA_REG, data, 4);
+    assert(ESP_OK == ret);
+
+    raw_temperature = (data[0] << 8) | data[1];
+    raw_humidity = (data[3] << 8) | data[4];
+
+    float temp = (float)((data[2] * 64) + (data[3] >> 2 )) / 16384.0 * 165.0 - 40.0;
+    float hum = (float)(((data[0] & 0x3F ) << 8) + data[1]) / 16384.0 * 100.0;
+
+    *temperature = temp;
+    *humidity = hum;
+
+    return sensor;
+}
