@@ -1,0 +1,4 @@
+dependencies:
+  pedrominatel/mc3479:
+    version: "*"
+    override_path: '../../../'
