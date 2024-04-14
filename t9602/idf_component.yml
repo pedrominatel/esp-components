@@ -1,4 +1,4 @@
-version: "1.0.0"
+version: "0.0.1"
 description: I2C driver for Amphenol T9602 for ESP-IDF
 url: https://github.com/pedrominatel/esp-components
 dependencies:

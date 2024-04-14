@@ -14,4 +14,5 @@ issues: https://github.com/pedrominatel/esp-components/issues
 dependencies:
   idf : ">=5.0"
 examples:
-  - path: ../examples/example_mc3479
+  - path: ../examples/example_mc3479_basic
+  - path: ../examples/example_mc3479_anymotion

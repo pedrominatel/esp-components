@@ -74,12 +74,12 @@ extern "C" {
 #define MC3479_TIMER_CTRL               0x4A // Timer control
 #define MC3479_RD_CNT                   0x4B // Read counter
 // Reserved
-
 #define MC3479_DEFAULT_CHIP_ID          0xa4 // Chip ID
 #define MC3479_DEFAULT_MODE             MC3479_MODE_CWAKE // Default mode
 #define MC3479_DEFAULT_RANGE            MC3479_RANGE_2G // Default range
 #define MC3479_DEFAULT_SAMPLE_RATE      MC3479_SAMPLE_100Hz // Default sample rate
 
+// MC3479 register masks
 typedef enum
 {
   MC3479_MODE_SLEEP     = 0b000,
@@ -88,6 +88,7 @@ typedef enum
   MC3479_MODE_STANDBY   = 0b011,
 } mc3479_mode_t;
 
+// MC3479 range
 typedef enum
 {
   MC3479_RANGE_2G    = 0b000,
@@ -97,6 +98,7 @@ typedef enum
   MC3479_RANGE_12G   = 0b100,
 }   mc3479_range_t;
 
+// MC3479 sample rate
 typedef enum
 {
   MC3479_SAMPLE_50Hz        = 0x10,
@@ -109,6 +111,7 @@ typedef enum
   MC3479_SAMPLE_2000Hz      = 0x16,
 }   mc3479_sample_t;
 
+// MC3479 motion
 typedef struct
 {
   bool TF;
@@ -121,6 +124,7 @@ typedef struct
   bool MOTION_RESET;
 }   mc3479_motion_t;
 
+// MC3479 motion interrupt
 typedef struct
 {
   bool TILT_INT;
@@ -133,6 +137,7 @@ typedef struct
   bool ACQ_INT;
 }   mc3479_motion_intr_t;
 
+// MC3479 motion interrupt status
 typedef struct
 {
   bool TILT_INT;
@@ -153,6 +158,7 @@ typedef struct
   uint8_t sample_rate;
 }   mc3479_config_t;
 
+// MC3479 GPIO interrupt
 typedef struct
 {
   bool RESERVED_0;
@@ -196,6 +202,12 @@ esp_err_t mc3479_set_gpio_intr(mc3479_handle_t sensor, mc3479_gpio_intr_t gpio_i
 esp_err_t mc3479_get_status_reg(mc3479_handle_t sensor, uint8_t *status_reg);
 esp_err_t mc3479_get_interrupt_status_reg(mc3479_handle_t sensor, uint8_t *intr_status_reg);
 esp_err_t mc3479_clean_all_interrupts(mc3479_handle_t sensor);
+
+esp_err_t mc3479_write_anymotion_threshold(mc3479_handle_t sensor, uint16_t threshold);
+esp_err_t mc3479_read_anymotion_threshold(mc3479_handle_t sensor, uint16_t *threshold);
+
+esp_err_t mc3479_set_anymotion_debounce(mc3479_handle_t sensor, uint8_t debounce);
+esp_err_t mc3479_get_anymotion_debounce(mc3479_handle_t sensor, uint8_t *debounce);
 
 #ifdef __cplusplus
 }

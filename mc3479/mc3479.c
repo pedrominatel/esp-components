@@ -15,6 +15,8 @@
 #include "esp_types.h"
 #include "mc3479.h"
 
+static const char *TAG = "MC3479";
+
 /* MC3479 device structure
     * @param bus I2C bus
     * @param int_pin interrupt pin
@@ -61,9 +63,9 @@ static esp_err_t mc3479_write(mc3479_handle_t sensor, const uint8_t reg_start_ad
     assert(ESP_OK == ret);
     i2c_cmd_link_delete(cmd);
 
-    printf("Write data to the register of the sensor\n");
-    printf("reg_start_addr: 0x%02x\n", reg_start_addr);
-    printf("data_buf: 0x%02x\n", *data_buf);
+    ESP_LOGD(TAG, "Write data to the register of the sensor");
+    ESP_LOGD(TAG, " >reg_start_addr: 0x%02x\n", reg_start_addr);
+    ESP_LOGD(TAG, " >data_buf: 0x%02x\n", *data_buf);
 
     return ret;
 }
@@ -443,4 +445,67 @@ esp_err_t mc3479_clean_all_interrupts(mc3479_handle_t sensor)
     uint8_t status_reg = 0x00;
     ret = mc3479_write(sensor, MC3479_INTR_STATUS, &status_reg, 1);
     return ret;
+}
+
+/* Get the motion interrupt of the sensor
+    * @param sensor object
+    * @param motion_intr motion interrupt
+    * @return
+    *     - ESP_OK Success
+    *     - ESP_FAIL Fail
+*/
+esp_err_t mc3479_write_anymotion_threshold(mc3479_handle_t sensor, uint16_t threshold)
+{
+    esp_err_t ret;
+    uint8_t data[2];
+    // Masking out bit 16 to ensure it's always 0
+    threshold &= 0x7FFF;
+    data[0] = threshold & 0xFF;
+    data[1] = (threshold >> 8) & 0xFF;
+    ret = mc3479_write(sensor, MC3479_AM_THRESH_LSB, data, 2);
+    return ret;
+}
+
+/* Get the motion interrupt of the sensor
+    * @param sensor object
+    * @param motion_intr motion interrupt
+    * @return
+    *     - ESP_OK Success
+    *     - ESP_FAIL Fail
+*/
+esp_err_t mc3479_read_anymotion_threshold(mc3479_handle_t sensor, uint16_t *threshold)
+{
+    uint8_t data[2];
+    esp_err_t ret = mc3479_read(sensor, MC3479_AM_THRESH_LSB, data, 2);
+    if (ret != ESP_OK) {
+        return ret;
+    }
+    *threshold = (data[1] << 8) | data[0];
+    // Masking out bit 16 to ensure it's always 0
+    *threshold &= 0x7FFF;
+    return ESP_OK;
+}
+
+/* Set the motion interrupt of the sensor
+    * @param sensor object
+    * @param motion_intr motion interrupt
+    * @return
+    *     - ESP_OK Success
+    *     - ESP_FAIL Fail
+*/
+esp_err_t mc3479_set_anymotion_debounce(mc3479_handle_t sensor, uint8_t debounce)
+{
+    return mc3479_write(sensor, MC3479_AM_DB, &debounce, 1);
+}
+
+/* Get the motion interrupt of the sensor
+    * @param sensor object
+    * @param motion_intr motion interrupt
+    * @return
+    *     - ESP_OK Success
+    *     - ESP_FAIL Fail
+*/
+esp_err_t mc3479_get_anymotion_debounce(mc3479_handle_t sensor, uint8_t *debounce)
+{
+    return mc3479_read(sensor, MC3479_AM_DB, debounce, 1);
 }

@@ -31,15 +31,11 @@ void mc3479_task(void *pvParameters)
     int16_t x, y, z = {0};
     while(1)
     {
-        //mc3479_get_acceleration(sensor, &x, &y, &z);
-        //ESP_LOGI(TAG, "X: %d, Y: %d, Z: %d", x, y, z);
-        //mc3479_get_status_reg(sensor, &z);
-        //ESP_LOGI(TAG, "Status Register: 0x%02x", z);
-        //mc3479_get_interrupt_status_reg(sensor, &z);
-        //ESP_LOGI(TAG, "Interrupt Status Register: 0x%02x", z);
-        ESP_LOGI(TAG, "Clean all interrupts");
-        mc3479_clean_all_interrupts(sensor);
-        vTaskDelay(10000 / portTICK_PERIOD_MS);
+        // Read the acceleration values
+        int16_t x, y, z = {0};
+        mc3479_get_acceleration(sensor, &x, &y, &z);
+        ESP_LOGI(TAG, "x=%d, y=%d, z=%d", x, y, z);
+        vTaskDelay(50 / portTICK_PERIOD_MS);
     }
 }
 
@@ -69,51 +65,6 @@ static void i2c_bus_init(void)
 
 }
 
-static void IRAM_ATTR gpio_isr_handler(void* arg)
-{
-    uint32_t gpio_num = (uint32_t) arg;
-    xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
-}
-
-static void intr_task(void* arg)
-{
-    uint32_t io_num;
-    for (;;) {
-        if (xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
-            printf("GPIO[%"PRIu32"] intr, val: %d\n", io_num, gpio_get_level(io_num));
-        }
-    }
-}
-
-void init_gpio_intr(uint8_t gpio){
-    
-    gpio_config_t io_conf;
-    //interrupt of rising edge
-    io_conf.intr_type = GPIO_INTR_ANYEDGE;
-    //bit mask of the pins, use GPIO4/5 here
-    io_conf.pin_bit_mask = (1ULL<<gpio);
-    //set as input mode
-    io_conf.mode = GPIO_MODE_INPUT;
-    //enable pull-up mode
-    io_conf.pull_up_en = 1;
-    gpio_config(&io_conf);
-
-}
-
-void create_intr_routine(void)
-{
-    init_gpio_intr(GPIO_INTN1);
-    init_gpio_intr(GPIO_INTN2);
-
-    gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
-    xTaskCreate(intr_task, "gpio_task_example", 2048, NULL, 10, NULL);
-
-    gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
-    gpio_isr_handler_add(GPIO_INTN1, gpio_isr_handler, (void*) GPIO_INTN1);
-    gpio_isr_handler_add(GPIO_INTN2, gpio_isr_handler, (void*) GPIO_INTN2);
-
-}
-
 static void mc3479_sensor_init(void)
 {
     i2c_bus_init();
@@ -130,66 +81,12 @@ static void mc3479_sensor_denit(void)
     mc3479_delete(sensor);
 }
 
-static void mc3479_sensor_motion(void)
-{
-    esp_err_t err = ESP_OK;
-    uint8_t motion_intr;
-    uint8_t motion;
-    
-    mc3479_motion_intr_t motion_intr_config = {
-        .TILT_INT = false,
-        .FLIP_INT = false,
-        .ANYM_INT = true,
-        .SHAKE_INT = false,
-        .TILT_35_INT = false,
-        .RESERVED = false,
-        .AUTO_CLR = false,
-        .ACQ_INT = false
-    };
-
-    err = mc3479_set_motion_intr(sensor, motion_intr_config);
-    assert(ESP_OK == err);
-
-    mc3479_get_motion_intr(sensor, &motion_intr);
-    ESP_LOGI(TAG, "Motion interrupt: 0x%02x", motion_intr);
-
-    mc3479_motion_t motion_config = {
-        .TF = false,
-        .MOTION_LATCH = true,
-        .ANY_MOTION = true,
-        .SHAKE = false,
-        .TILT_35 = false,
-        .Z_AXIS_ORT = false,
-        .RAW_PROC_STAT = false,
-        .MOTION_RESET = false
-    };
-
-    err = mc3479_set_motion(sensor, motion_config);
-    assert(ESP_OK == err);
-    
-    mc3479_get_motion(sensor, &motion);
-    ESP_LOGI(TAG, "Motion Config: 0x%02x", motion);
-
-    mc3479_gpio_intr_t gpio_intr_config = {
-        .GPIO1_INTN1_IAH = true,
-        .GPIO1_INTN1_IPP = true,
-        .GPIO2_INTN2_IAH = true,
-        .GPIO2_INTN2_IPP = true
-    };
-
-    ESP_LOGI(TAG, "Motion Interrupt Set");
-    mc3479_set_gpio_intr(sensor, gpio_intr_config);
-
-}
-
 static void mc3479_sensor_start(void)
 {
     
     mc3479_config_t cfg;
 
     mc3479_set_mode(sensor, MC3479_MODE_SLEEP);
-    mc3479_clean_all_interrupts(sensor);
-    mc3479_sensor_motion();
 
     // Set and check the range
     mc3479_set_range(sensor, MC3479_RANGE_2G);
@@ -237,7 +134,6 @@ void app_main(void)
     esp_err_t err = ESP_OK;
     uint8_t chip_id;
     
-    create_intr_routine();
     mc3479_sensor_init();
     err = mc3479_get_chip_id(sensor, &chip_id);
 
