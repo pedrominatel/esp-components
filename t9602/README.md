@@ -1,5 +1,7 @@
 # I2C Driver Component for the T9602 Temperature and Humidity Sensor
 
+[![Component Registry](https://components.espressif.com/components/pedrominatel/t9602/badge.svg)](https://components.espressif.com/components/pedrominatel/t9602)
+
 ## Features
 
 * Get Temperature
