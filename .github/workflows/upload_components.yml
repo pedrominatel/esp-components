@@ -3,7 +3,7 @@ name: Push components to Espressif Component Service
 on:
   push:
     branches:
-      - master
+      - 'main'
   pull_request:
     types: [opened, reopened, synchronize]
 
