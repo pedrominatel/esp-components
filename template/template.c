@@ -4,124 +4,72 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <stddef.h>
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
 #include <sys/time.h>
-#include "esp_system.h"
-#include "esp_check.h"
 #include "esp_log.h"
 #include "esp_err.h"
-#include "esp_types.h"
 #include "template.h"
 
-/* Template device structure
-    * @param bus I2C bus
-    * @param int_pin interrupt pin
-    * @param dev_addr device address
-    * @param counter counter
-    * @param dt delay time between two measurements
-    * @param timer timer
-*/
-typedef struct {
-    i2c_port_t bus;
-    gpio_num_t int_pin;
-    uint16_t dev_addr;
-    uint32_t counter;
-    float dt;  /*!< delay time between two measurements, dt should be small (ms level) */
-    struct timeval *timer;
-} template_dev_t;
 
-/* Write data to the register of the sensor 
-    * @param sensor object
-    * @param reg_start_addr register address
-    * @param data_buf data buffer
-    * @param data_len data length
-    * @return
-    *     - ESP_OK Success
-    *     - ESP_FAIL Fail
-*/
-static esp_err_t template_write(template_handle_t sensor, const uint8_t reg_start_addr, const uint8_t *const data_buf, const uint8_t data_len)
+i2c_master_dev_handle_t template_device_create(i2c_master_bus_handle_t bus_handle, const uint16_t dev_addr, const uint32_t dev_speed)
 {
-    template_dev_t *template = (template_dev_t *) sensor;
-    esp_err_t ret = ESP_OK;
 
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    ret = i2c_master_start(cmd);
-    assert(ESP_OK == ret);
-    ret = i2c_master_write_byte(cmd, template->dev_addr, true);
-    assert(ESP_OK == ret);
-    ret = i2c_master_write_byte(cmd, reg_start_addr, true);
-    assert(ESP_OK == ret);
-    ret = i2c_master_write(cmd, data_buf, data_len, true);
-    assert(ESP_OK == ret);
-    ret = i2c_master_stop(cmd);
-    assert(ESP_OK == ret);
-    ret = i2c_master_cmd_begin(template->bus, cmd, 1000 / portTICK_PERIOD_MS);
-    assert(ESP_OK == ret);
-    i2c_cmd_link_delete(cmd);
+    if (bus_handle == NULL) {
+        return NULL;
+    }
 
-    return ret;
+    i2c_device_config_t dev_cfg = {
+        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+        .device_address = dev_addr,
+        .scl_speed_hz = dev_speed,
+    };
+
+    i2c_master_dev_handle_t dev_handle = NULL;
+
+    // Add device to the I2C bus
+    ESP_ERROR_CHECK(i2c_master_bus_add_device(bus_handle, &dev_cfg, &dev_handle));
+
+    return dev_handle;
 }
 
-/* Read data from the register of the sensor 
-    * @param sensor object
-    * @param reg_start_addr register address
-    * @param data_buf data buffer
-    * @param data_len data length
-    * @return
-    *     - ESP_OK Success
-    *     - ESP_FAIL Fail
-*/
-static esp_err_t template__read(template_handle_t sensor, const uint8_t reg_start_addr, uint8_t *data_buf, const uint8_t data_len)
+esp_err_t template_device_delete(i2c_master_dev_handle_t dev_handle)
 {
-    
-    template_dev_t *template = (template_dev_t *) sensor;
-    esp_err_t ret = ESP_OK;
-
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    ret = i2c_master_start(cmd);
-    assert(ESP_OK == ret);
-    ret = i2c_master_write_byte(cmd, template->dev_addr, true);
-    assert(ESP_OK == ret);
-    ret = i2c_master_write_byte(cmd, reg_start_addr, true);
-    assert(ESP_OK == ret);
-    ret = i2c_master_start(cmd);
-    assert(ESP_OK == ret);
-    ret = i2c_master_write_byte(cmd, template->dev_addr | 1, true);
-    assert(ESP_OK == ret);
-    ret = i2c_master_read(cmd, data_buf, data_len, I2C_MASTER_LAST_NACK);
-    assert(ESP_OK == ret);
-    ret = i2c_master_stop(cmd);
-    assert(ESP_OK == ret);
-    ret = i2c_master_cmd_begin(template->bus, cmd, 1000 / portTICK_PERIOD_MS);
-    assert(ESP_OK == ret);
-    i2c_cmd_link_delete(cmd);
-    
-    return ret;
+    return i2c_master_bus_rm_device(dev_handle);
 }
 
-/* Delete the sensor object
-    * @param sensor object
-*/
-void template_delete(template_handle_t sensor)
+
+
+void template_read_data(i2c_master_dev_handle_t dev_handle, uint8_t *data, size_t len)
 {
-    template_dev_t *template = (template_dev_t *) sensor;
-    free(sensor);
+    if (dev_handle == NULL) {
+        return;
+    }
+
+    // Read data from the sensor
+    ESP_ERROR_CHECK(i2c_master_receive(dev_handle, data, len, -1));
+
 }
 
-/* Create the sensor object
-    * @param port I2C port
-    * @param dev_addr device address
-    * @return sensor object
-*/
-template_handle_t template_create(i2c_port_t port, const uint16_t dev_addr)
+void template_data_write(i2c_master_dev_handle_t dev_handle, uint8_t *data, size_t len)
 {
-    template_dev_t *sensor = (template_dev_t *) calloc(1, sizeof(template_dev_t));
-    sensor->bus = port;
-    sensor->dev_addr = dev_addr << 1;
-    sensor->counter = 0;
-    sensor->dt = 0;
-    sensor->timer = (struct timeval *) malloc(sizeof(struct timeval));
-    return (template_handle_t) sensor;
+    if (dev_handle == NULL) {
+        return;
+    }
+
+    // Write data to the sensor
+    ESP_ERROR_CHECK(i2c_master_transmit(dev_handle, data, len, -1));
+}
+
+void template_data_write_read(i2c_master_dev_handle_t dev_handle, uint8_t *data, size_t len, uint8_t *data_rd, size_t len_rd)
+{
+    if (dev_handle == NULL) {
+        return;
+    }
+
+    // Write data to the sensor
+    ESP_ERROR_CHECK(i2c_master_transmit_receive(dev_handle, data, len, data_rd, len_rd, -1));
+
 }

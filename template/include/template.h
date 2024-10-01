@@ -15,12 +15,8 @@
 extern "C" {
 #endif
 
-#include "driver/i2c.h"
 #include "driver/gpio.h"
-
-#define I2C_ADDR_0 0x4c // Address selection pin of the MC3479 to GND
-#define I2C_ADDR_1 0x6c // Address selection pin of the MC3479 to VDD
-#define I2C_MASTER_NUM I2C_NUM_0
+#include "driver/i2c_master.h"
 
 typedef void *template_handle_t;
 

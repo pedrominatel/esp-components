@@ -4,153 +4,85 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
 #include <sys/time.h>
-#include "esp_system.h"
-#include "esp_check.h"
 #include "esp_log.h"
 #include "esp_err.h"
-#include "esp_types.h"
 #include "t9602.h"
 
-/* t9602 device structure
-    * @param bus I2C bus
-    * @param int_pin interrupt pin
-    * @param dev_addr device address
-    * @param counter counter
-    * @param dt delay time between two measurements
-    * @param timer timer
-*/
-typedef struct {
-    i2c_port_t bus;
-    gpio_num_t int_pin;
-    uint16_t dev_addr;
-    uint32_t counter;
-    float dt;  /*!< delay time between two measurements, dt should be small (ms level) */
-    struct timeval *timer;
-} t9602_dev_t;
-
-/* Write data to the register of the sensor 
-    * @param sensor object
-    * @param reg_start_addr register address
-    * @param data_buf data buffer
-    * @param data_len data length
-    * @return
-    *     - ESP_OK Success
-    *     - ESP_FAIL Fail
-*/
-static esp_err_t t9602_write(t9602_handle_t sensor, const uint8_t reg_start_addr, const uint8_t *const data_buf, const uint8_t data_len)
+/**
+ * @brief Creates and configures an I2C device handle for the T9602 sensor.
+ *
+ * This function initializes an I2C device handle for the T9602 sensor by configuring
+ * the device address, and speed. It then adds the device to the specified
+ * I2C bus.
+ *
+ * @param bus_handle Handle to the I2C bus to which the device will be added.
+ * @param dev_addr The 7-bit I2C address of the T9602 sensor.
+ * @param dev_speed The speed of the I2C bus in Hz.
+ *
+ * @return Handle to the configured I2C device.
+ */
+i2c_master_dev_handle_t t9602_device_create(i2c_master_bus_handle_t bus_handle, const uint16_t dev_addr, const uint32_t dev_speed)
 {
-    t9602_dev_t *t9602 = (t9602_dev_t *) sensor;
-    esp_err_t ret = ESP_OK;
 
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    ret = i2c_master_start(cmd);
-    assert(ESP_OK == ret);
-    ret = i2c_master_write_byte(cmd, t9602->dev_addr, true);
-    assert(ESP_OK == ret);
-    ret = i2c_master_write_byte(cmd, reg_start_addr, true);
-    assert(ESP_OK == ret);
-    ret = i2c_master_write(cmd, data_buf, data_len, true);
-    assert(ESP_OK == ret);
-    ret = i2c_master_stop(cmd);
-    assert(ESP_OK == ret);
-    ret = i2c_master_cmd_begin(t9602->bus, cmd, 1000 / portTICK_PERIOD_MS);
-    assert(ESP_OK == ret);
-    i2c_cmd_link_delete(cmd);
+    i2c_device_config_t dev_cfg = {
+        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+        .device_address = dev_addr,
+        .scl_speed_hz = dev_speed,
+    };
 
-    return ret;
+    i2c_master_dev_handle_t dev_handle;
+
+    // Add device to the I2C bus
+    ESP_ERROR_CHECK(i2c_master_bus_add_device(bus_handle, &dev_cfg, &dev_handle));
+
+    return dev_handle;
 }
 
-/* Read data from the register of the sensor 
-    * @param sensor object
-    * @param reg_start_addr register address
-    * @param data_buf data buffer
-    * @param data_len data length
-    * @return
-    *     - ESP_OK Success
-    *     - ESP_FAIL Fail
-*/
-static esp_err_t t9602_read(t9602_handle_t sensor, const uint8_t reg_start_addr, uint8_t *data_buf, const uint8_t data_len)
+/**
+ * @brief Deletes the T9602 device from the I2C master bus.
+ *
+ * This function removes the specified T9602 device from the I2C master bus
+ * by using the provided device handle.
+ *
+ * @param[in] dev_handle Handle to the I2C master device to be removed.
+ *
+ * @return
+ *     - ESP_OK: Success
+ *     - ESP_ERR_INVALID_ARG: Invalid argument
+ *     - ESP_FAIL: Other failures
+ */
+esp_err_t t9602_device_delete(i2c_master_dev_handle_t dev_handle)
 {
-    
-    t9602_dev_t *t9602 = (t9602_dev_t *) sensor;
-    esp_err_t ret = ESP_OK;
-
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    ret = i2c_master_start(cmd);
-    assert(ESP_OK == ret);
-    ret = i2c_master_write_byte(cmd, t9602->dev_addr, true);
-    assert(ESP_OK == ret);
-    ret = i2c_master_write_byte(cmd, reg_start_addr, true);
-    assert(ESP_OK == ret);
-    ret = i2c_master_start(cmd);
-    assert(ESP_OK == ret);
-    ret = i2c_master_write_byte(cmd, t9602->dev_addr | 1, true);
-    assert(ESP_OK == ret);
-    ret = i2c_master_read(cmd, data_buf, data_len, I2C_MASTER_LAST_NACK);
-    assert(ESP_OK == ret);
-    ret = i2c_master_stop(cmd);
-    assert(ESP_OK == ret);
-    ret = i2c_master_cmd_begin(t9602->bus, cmd, 1000 / portTICK_PERIOD_MS);
-    assert(ESP_OK == ret);
-    i2c_cmd_link_delete(cmd);
-    
-    return ret;
+    return i2c_master_bus_rm_device(dev_handle);
 }
 
-/* Delete the sensor object
-    * @param sensor object
-*/
-void t9602_delete(t9602_handle_t sensor)
-{
-    t9602_dev_t *t9602 = (t9602_dev_t *) sensor;
-    free(sensor);
-}
-
-/* Create the sensor object
-    * @param port I2C port
-    * @param dev_addr device address
-    * @return sensor object
-*/
-t9602_handle_t t9602_create(i2c_port_t port, const uint16_t dev_addr)
-{
-    t9602_dev_t *sensor = (t9602_dev_t *) calloc(1, sizeof(t9602_dev_t));
-    sensor->bus = port;
-    sensor->dev_addr = dev_addr << 1;
-    sensor->counter = 0;
-    sensor->dt = 0;
-    sensor->timer = (struct timeval *) malloc(sizeof(struct timeval));
-    return (t9602_handle_t) sensor;
-}
-
-/* Get the sensor data
-    * @param sensor object
-    * @param temperature temperature value
-    * @param humidity humidity value
-    * @return sensor object
-*/
-t9602_handle_t t9602_get_data(t9602_handle_t sensor, float *temperature, float *humidity)
+/**
+ * @brief Retrieve temperature and humidity data from the T9602 sensor.
+ *
+ * This function reads 4 bytes of data from the T9602 sensor and calculates
+ * the temperature and humidity values using the formula provided in the 
+ * sensor's datasheet.
+ *
+ * @param dev_handle The I2C master device handle.
+ * @param temperature Pointer to a float where the calculated temperature will be stored.
+ * @param humidity Pointer to a float where the calculated humidity will be stored.
+ */
+void t9602_get_data(i2c_master_dev_handle_t dev_handle, float *temperature, float *humidity)
 {
 
-    esp_err_t ret = ESP_OK;
-    uint8_t data[4] = {0};
-    uint16_t raw_temperature = 0;
-    uint16_t raw_humidity = 0;
+    uint8_t b_read[4] = {0};
+    uint8_t b_write[1] = {T9602_DATA_REG};
 
-    ret = t9602_read(sensor, T9602_DATA_REG, data, 4);
-    assert(ESP_OK == ret);
+    // Read 4 bytes of data from the sensor
+    ESP_ERROR_CHECK(i2c_master_transmit_receive(dev_handle, b_write, sizeof(b_write), b_read, 4, -1));
 
-    raw_temperature = (data[0] << 8) | data[1];
-    raw_humidity = (data[3] << 8) | data[4];
+    // Calculate temperature and humidity by using the formula provided in the datasheet
+    *temperature = (float)((b_read[2] * 64) + (b_read[3] >> 2 )) / 16384.0 * 165.0 - 40.0;
+    *humidity = (float)(((b_read[0] & 0x3F ) << 8) + b_read[1]) / 16384.0 * 100.0;
 
-    float temp = (float)((data[2] * 64) + (data[3] >> 2 )) / 16384.0 * 165.0 - 40.0;
-    float hum = (float)(((data[0] & 0x3F ) << 8) + data[1]) / 16384.0 * 100.0;
-
-    *temperature = temp;
-    *humidity = hum;
-
-    return sensor;
 }
