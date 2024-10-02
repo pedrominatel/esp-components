@@ -13,5 +13,12 @@ repository: https://github.com/pedrominatel/esp-components.git
 issues: https://github.com/pedrominatel/esp-components/issues
 maintainers:
   - "Pedro Minatel <pminatel@gmail.com>"
+tags:
+  - t9602
+  - sensor
+  - temperature
+  - humidity
+  - i2c
+  - driver
 dependencies:
-  idf : ">=5.2"
+  idf : ">=5.3"
