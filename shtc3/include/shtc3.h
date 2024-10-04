@@ -16,27 +16,29 @@ extern "C" {
 #endif
 
 #include "driver/i2c_master.h"
-#include "driver/gpio.h"
 
 // SHTC3 I2C address
 #define SHTC3_I2C_ADDR          ((uint8_t)0x70) // I2C address of SHTC3 sensor
 
-// SHTC3 register addresses
-#define SHTC3_REG_READ_ID       ((uint16_t)0xEFC8) // Read ID register
-#define SHTC3_REG_WAKE          ((uint16_t)0x3517) // Wake up sensor
-#define SHTC3_REG_SLEEP         ((uint16_t)0xB098) // Put sensor to sleep
-#define SHTC3_REG_SOFT_RESET    ((uint16_t)0x805D) // Soft reset
-
+// SHTC3 register addresses write only
 typedef enum {
-    SHTC3_REG_T_CSE_NM  = 0x7CA2, // Read temperature first with clock stretching enabled in normal mode
-    SHTC3_REG_RH_CSE_NM = 0x5C24, // Read humidity first with clock stretching enabled in normal mode
-    SHTC3_REG_T_CSE_LM  = 0x6458, // Read temperature first with clock stretching enabled in low power mode
-    SHTC3_REG_RH_CSE_LM = 0x44DE, // Read humidity first with clock stretching enabled in low power mode
-    SHTC3_REG_T_CSD_NM  = 0x7866, // Read temperature first with clock stretching disabled in normal mode
-    SHTC3_REG_RH_CSD_NM = 0x58E0, // Read humidity first with clock stretching disabled in normal mode
-    SHTC3_REG_T_CSD_LM  = 0x609C, // Read temperature first with clock stretching disabled in low power mode
-    SHTC3_REG_RH_CSD_LM = 0x401A  // Read humidity first with clock stretching disabled in low power mode
-} shtc3_register_t;
+    SHTC3_REG_READ_ID       = 0xEFC8, // Read ID register
+    SHTC3_REG_WAKE          = 0x3517, // Wake up sensor
+    SHTC3_REG_SLEEP         = 0xB098, // Put sensor to sleep
+    SHTC3_REG_SOFT_RESET    = 0x805D  // Soft reset
+} shtc3_register_w_t;
+
+// SHTC3 register addresses read-write
+typedef enum {
+    SHTC3_REG_T_CSE_NM  = 0x7CA2, // Temperature first with clock stretching enabled in normal mode
+    SHTC3_REG_RH_CSE_NM = 0x5C24, // Humidity first with clock stretching enabled in normal mode
+    SHTC3_REG_T_CSE_LM  = 0x6458, // Temperature first with clock stretching enabled in low power mode
+    SHTC3_REG_RH_CSE_LM = 0x44DE, // Humidity first with clock stretching enabled in low power mode
+    SHTC3_REG_T_CSD_NM  = 0x7866, // Temperature first with clock stretching disabled in normal mode
+    SHTC3_REG_RH_CSD_NM = 0x58E0, // Humidity first with clock stretching disabled in normal mode
+    SHTC3_REG_T_CSD_LM  = 0x609C, // Temperature first with clock stretching disabled in low power mode
+    SHTC3_REG_RH_CSD_LM = 0x401A  // Humidity first with clock stretching disabled in low power mode
+} shtc3_register_rw_t;
 
 /**
  * @brief Creates a handle for the SHTC3 device on the specified I2C bus.
@@ -83,7 +85,7 @@ esp_err_t shtc3_device_delete(i2c_master_dev_handle_t dev_handle);
  *     - ESP_ERR_INVALID_ARG: Invalid arguments
  *     - ESP_FAIL: Communication with the sensor failed
  */
-esp_err_t shtc3_get_th(i2c_master_dev_handle_t dev_handle, shtc3_register_t reg, float *data1, float *data2);
+esp_err_t shtc3_get_th(i2c_master_dev_handle_t dev_handle, shtc3_register_rw_t reg, float *data1, float *data2);
 
 /**
  * @brief Retrieve the ID from the SHTC3 sensor.
@@ -91,13 +93,14 @@ esp_err_t shtc3_get_th(i2c_master_dev_handle_t dev_handle, shtc3_register_t reg,
  * This function communicates with the SHTC3 sensor over I2C to obtain its unique identifier.
  *
  * @param dev_handle Handle to the I2C master device.
+ * @param id Pointer to a buffer where the ID will be stored.
  * 
  * @return 
  *     - ESP_OK: Success
  *     - ESP_ERR_INVALID_ARG: Invalid argument
  *     - ESP_FAIL: Communication with the sensor failed
  */
-esp_err_t shtc3_get_id(i2c_master_dev_handle_t dev_handle);
+esp_err_t shtc3_get_id(i2c_master_dev_handle_t dev_handle, uint8_t *id);
 
 #ifdef __cplusplus
 }

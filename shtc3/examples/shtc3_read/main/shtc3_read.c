@@ -21,7 +21,7 @@ void shtc3_read_task(void *pvParameters)
 {
     float temperature, humidity;
     esp_err_t err = ESP_OK;
-    shtc3_register_t reg = SHTC3_REG_T_CSE_NM;
+    shtc3_register_rw_t reg = SHTC3_REG_T_CSE_NM;
 
     while (1) {
         err = shtc3_get_th(shtc3_handle, reg, &temperature, &humidity);
@@ -64,7 +64,9 @@ void app_main(void)
 
     if(err == ESP_OK) {
         ESP_LOGI(TAG, "SHTC3 sensor found");
-        err = shtc3_get_id(shtc3_handle);
+        uint8_t sensor_id[2];
+        err = shtc3_get_id(shtc3_handle, sensor_id);
+        ESP_LOGI(TAG, "Sensor ID: 0x%02x%02x", sensor_id[0], sensor_id[1]);
 
         if(err == ESP_OK) {
             ESP_LOGI(TAG, "SHTC3 ID read successfully");
