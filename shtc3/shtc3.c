@@ -41,7 +41,7 @@ esp_err_t shtc3_device_delete(i2c_master_dev_handle_t dev_handle)
 static esp_err_t shtc3_wake(i2c_master_dev_handle_t dev_handle)
 {
     esp_err_t ret;
-    uint16_t reg_addr = SHTC3_REG_WAKE;
+    shtc3_register_w_t reg_addr = SHTC3_REG_WAKE;
     uint8_t read_reg[2] = { reg_addr >> 8, reg_addr & 0xff };
     
     ret = i2c_master_transmit(dev_handle, read_reg, 2, -1);
@@ -53,7 +53,7 @@ static esp_err_t shtc3_wake(i2c_master_dev_handle_t dev_handle)
 static esp_err_t shtc3_sleep(i2c_master_dev_handle_t dev_handle)
 {
     esp_err_t ret;
-    uint16_t reg_addr = SHTC3_REG_SLEEP;
+    shtc3_register_w_t reg_addr = SHTC3_REG_SLEEP;
     uint8_t read_reg[2] = { reg_addr >> 8, reg_addr & 0xff };
 
     ret = i2c_master_transmit(dev_handle, read_reg, 2, -1);
@@ -62,36 +62,34 @@ static esp_err_t shtc3_sleep(i2c_master_dev_handle_t dev_handle)
     return ret;
 }
 
-esp_err_t shtc3_get_id(i2c_master_dev_handle_t dev_handle)
+esp_err_t shtc3_get_id(i2c_master_dev_handle_t dev_handle, uint8_t *id)
 {
     esp_err_t ret;
-    uint16_t reg_addr = SHTC3_REG_READ_ID;
+    shtc3_register_rw_t reg_addr = SHTC3_REG_READ_ID;
     uint8_t read_reg[2] = { reg_addr >> 8, reg_addr & 0xff };
     uint8_t b_read[2] = {0};
 
     shtc3_wake(dev_handle);
-
     ret = i2c_master_transmit_receive(dev_handle, read_reg, 2, b_read, 2, 200);
     ESP_RETURN_ON_ERROR(ret, TAG, "Failed to read SHTC3 ID");
 
-    ESP_LOGI(TAG, "SHTC3 ID: 0x%02x%02x", b_read[0], b_read[1]);
+    // Copy the read ID to the provided id pointer
+    id[0] = b_read[0];
+    id[1] = b_read[1];
 
     return ret;
 }
 
- esp_err_t shtc3_get_th(i2c_master_dev_handle_t dev_handle, shtc3_register_t reg, float *data1, float *data2)
+ esp_err_t shtc3_get_th(i2c_master_dev_handle_t dev_handle, shtc3_register_rw_t reg, float *data1, float *data2)
 {
     esp_err_t ret;
     uint8_t b_read[6] = {0};
-    uint16_t reg_addr = reg;
-    uint8_t read_reg[2] = { reg_addr >> 8, reg_addr & 0xff };
+    uint8_t read_reg[2] = { reg >> 8, reg & 0xff };
 
     shtc3_wake(dev_handle);
-    
     // Read 4 bytes of data from the sensor
     ret = i2c_master_transmit_receive(dev_handle, read_reg, 2, b_read, 6, 200);
     ESP_RETURN_ON_ERROR(ret, TAG, "Failed to read data from SHTC3 sensor");
-
     shtc3_sleep(dev_handle);
 
     // Convert the data
