@@ -24,7 +24,6 @@ jobs:
           - esp32s3
         examples_path:
           - 'shtc3/examples/shtc3_read'
-          - 'mc3479/examples/example_mc3479_basic'
           - 't9602/examples/example_t9602'
     steps:
       - name: Checkout repository
@@ -35,5 +34,5 @@ jobs:
         uses: espressif/esp-idf-ci-action@v1.1.0
         with:
           esp_idf_version: "latest"
-          #target: ${{ matrix.espidf_target }}
+          target: ${{ matrix.espidf_target }}
           path: ${{ matrix.examples_path }}
