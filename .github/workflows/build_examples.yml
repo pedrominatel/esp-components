@@ -6,26 +6,30 @@ on:
       - 'main'
   pull_request:
     types: [opened, reopened, synchronize]
-  schedule:
-    - cron: '0 1 * * 6'
 
 jobs:
   build:
+    name: Build Test App
+    runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        idf_ver: ["release-v5.3", "latest"]
-    runs-on: ubuntu-22.04
-    container: espressif/idf:${{ matrix.idf_ver }}
+        espidf_target:
+          - esp32
+          - esp32c3
+          - esp32c6
+          - esp32h2
+          - esp32p4
+          - esp32s2
+          - esp32s3
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v4
-    - name: Install idf-build-apps
-      shell: bash
-      run: |
-        . ${IDF_PATH}/export.sh
-        python3 -m pip install idf-build-apps==2.4.3
-    - name: Build examples
-      shell: bash
-      run: |
-        . ${IDF_PATH}/export.sh
-        idf-build-apps build
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: Build Test Application with ESP-IDF
+        uses: espressif/esp-idf-ci-action@v1.1.0
+        with:
+          esp_idf_version: "latest"
+          target: ${{ matrix.espidf_target }}
+          path: 'shtc3/examples/shtc3_read'
