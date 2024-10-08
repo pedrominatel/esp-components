@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    name: Build Test App
+    name: build target
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -22,6 +22,10 @@ jobs:
           - esp32p4
           - esp32s2
           - esp32s3
+        examples_path:
+          - 'shtc3/examples/shtc3_read'
+          - 'mc3479/examples/mc3479_read'
+          - 't9602/examples/t9602_read'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,4 +36,4 @@ jobs:
         with:
           esp_idf_version: "latest"
           target: ${{ matrix.espidf_target }}
-          path: 'shtc3/examples/shtc3_read'
+          path: ${{ matrix.examples_path }}
