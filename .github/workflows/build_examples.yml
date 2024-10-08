@@ -35,5 +35,5 @@ jobs:
         uses: espressif/esp-idf-ci-action@v1.1.0
         with:
           esp_idf_version: "latest"
-          target: ${{ matrix.espidf_target }}
+          #target: ${{ matrix.espidf_target }}
           path: ${{ matrix.examples_path }}
