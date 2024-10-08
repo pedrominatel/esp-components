@@ -14,14 +14,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        espidf_target:
-          - esp32
-          - esp32c3
-          - esp32c6
-          - esp32h2
-          - esp32p4
-          - esp32s2
-          - esp32s3
         examples_path:
           - 'shtc3/examples/shtc3_read'
           - 't9602/examples/example_t9602'
@@ -34,5 +26,4 @@ jobs:
         uses: espressif/esp-idf-ci-action@v1.1.0
         with:
           esp_idf_version: "latest"
-          target: ${{ matrix.espidf_target }}
           path: ${{ matrix.examples_path }}
