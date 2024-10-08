@@ -2,6 +2,8 @@
 
 This library includes:
 
-* MC3479 (WIP)
-* T9602 (WIP)
-* MAX17055 (WIP)
+- MC3479
+- T9602
+- MAX17055
+- SHTC3
+- SHTC4X (WIP)
