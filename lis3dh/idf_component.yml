@@ -1,0 +1,17 @@
+version: 1.0.0
+description: LIS3DH driver
+url: https://github.com/pedrominatel/esp-components/tree/main/lis3dh
+repository: https://github.com/pedrominatel/esp-components.git
+issues: https://github.com/pedrominatel/esp-components/issues
+maintainers:
+  - "Pedro Minatel <pminatel@gmail.com>"
+tags:
+  - lis3dh
+  - sensor
+  - imu
+  - acceelerometer
+  - 3dof
+  - i2c
+  - driver
+dependencies:
+  idf : ">=5.3"

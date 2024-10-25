@@ -1,0 +1,4 @@
+dependencies:
+  pedrominatel/lis3dh:
+    version: "*"
+    override_path: '../../../'
