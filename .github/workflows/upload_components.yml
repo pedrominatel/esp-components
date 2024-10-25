@@ -15,6 +15,6 @@ jobs:
         uses: espressif/upload-components-ci-action@v1
         with:
           directories: >
-            t9602;mc3479;shtc3;
+            t9602;mc3479;shtc3;sht4x;
           namespace: "pedrominatel"
           api_token: ${{ secrets.IDF_COMPONENT_API_TOKEN }}

@@ -1,0 +1,4 @@
+dependencies:
+  pedrominatel/sht4x:
+    version: "*"
+    override_path: '../../../'
