@@ -16,14 +16,13 @@ static const char *TAG = "SHT4X";
 
 i2c_master_dev_handle_t sht4x_handle;
 
-// task to read temperature and humidity from the sensor
 void sht4x_read_task(void *pvParameters)
 {
     float temperature, humidity;
 
     while (1) {
         
-        esp_err_t err = sht4x_start_measurement(sht4x_handle);
+        esp_err_t err = sht4x_start_measurement(sht4x_handle, SHT4X_CMD_READ_MEASUREMENT_HIGH);
         vTaskDelay(pdMS_TO_TICKS(50));
         err = sht4x_read_measurement(sht4x_handle, &temperature, &humidity);
 
