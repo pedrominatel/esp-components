@@ -34,7 +34,7 @@ i2c_master_dev_handle_t sht4x_device_create(i2c_master_bus_handle_t bus_handle, 
     return dev_handle;
 }
 
-esp_err_t sht4x_start_measurement(i2c_master_dev_handle_t dev_handle)
+esp_err_t sht4x_start_measurement(i2c_master_dev_handle_t dev_handle, sht4x_measurement_mode mode)
 {
     
     esp_err_t ret;
@@ -72,7 +72,6 @@ esp_err_t sht4x_read_measurement(i2c_master_dev_handle_t dev_handle, float *temp
     
     return ESP_OK;
 }
-
 
 esp_err_t sht4x_device_delete(i2c_master_dev_handle_t dev_handle)
 {
