@@ -1,6 +1,6 @@
 # I2C Driver Component for the SHTC3 Temperature and Humidity Sensor
 
-[![Component Registry](https://components.espressif.com/components/pedrominatel/sht2x/badge.svg)](https://components.espressif.com/components/pedrominatel/sht2x)
+[![Component Registry](https://components.espressif.com/components/pedrominatel/sht2x/badge.svg)](https://components.espressif.com/components/pedrominatel/shtc3)
 
 The SHTC3 is a digital temperature and humidity sensor optimized for battery-powered, high-volume consumer electronics. It offers low power consumption and high precision, making it ideal for portable and wearable devices.
 
