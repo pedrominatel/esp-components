@@ -1,0 +1,33 @@
+menu "Stepper Motor Driver TMC2208"
+            
+    menu "GPIO Configuration"
+        config MOTOR_STEP_IO
+            int "Driver step pin"
+            default 18
+            range -1 55
+            help
+                GPIO connected to the step pin. To disable, set to -1.
+
+        config MOTOR_DIR_IO
+            int "Driver direction pin"
+            default 19
+            range -1 55
+            help
+                GPIO connected to the direction pin. To disable, set to -1.
+
+        config MOTOR_MS1_IO
+            int "Driver micro step 1 pin"
+            default 20
+            range -1 55
+            help
+                GPIO connected to the micro step 1 pin. To disable, set to -1.
+
+        config MOTOR_MS2_IO
+            int "Driver micro step 2 pin"
+            default 21
+            range -1 55
+            help
+                GPIO connected to the micro step 2 pin. To disable, set to -1.
+    endmenu
+  
+endmenu
