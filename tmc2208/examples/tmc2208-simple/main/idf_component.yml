@@ -1,0 +1,4 @@
+dependencies:
+  pedrominatel/tmc2208:
+    version: "*"
+    override_path: '../../../'
