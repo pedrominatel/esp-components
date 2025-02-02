@@ -17,11 +17,11 @@ void app_main(void)
     ESP_LOGI(TAG, "Driver initialization");
 
     tmc2208_io_config_t config_io_motor1 = {
-        .step_pin = 5,
-        .dir_pin = 4,
-        .enable_pin = 10,
-        .ms1_pin = 6,
-        .ms2_pin = 7,
+        .step_pin = CONFIG_MOTOR_STEP_IO,
+        .dir_pin = CONFIG_MOTOR_DIR_IO,
+        .enable_pin = CONFIG_MOTOR_EN_IO,
+        .ms1_pin = CONFIG_MOTOR_MS1_IO,
+        .ms2_pin = CONFIG_MOTOR_MS2_IO,
     };
 
     ESP_ERROR_CHECK(tmc2208_init(&config_io_motor1));
