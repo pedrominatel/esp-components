@@ -1,3 +1,5 @@
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <math.h>
 #include "freertos/FreeRTOS.h"
@@ -14,48 +16,53 @@ void app_main(void)
 
     ESP_LOGI(TAG, "Driver initialization");
 
-    tmc2208_io_config_t config = {
-        .step_pin = 18,
-        .dir_pin = 19,
-        .enable_pin = 0,
-        .ms1_pin = 22,
-        .ms2_pin = 23,
+    tmc2208_io_config_t config_io_motor1 = {
+        .step_pin = 5,
+        .dir_pin = 4,
+        .enable_pin = 10,
+        .ms1_pin = 6,
+        .ms2_pin = 7,
     };
 
-    ESP_ERROR_CHECK(tmc2208_init(&config));
+    ESP_ERROR_CHECK(tmc2208_init(&config_io_motor1));
     ESP_LOGI(TAG, "Driver initialization done");
 
-    while (1) {
-
-    tmc2208_motor_config_t motor_config = {
+    tmc2208_motor_config_t motor1_config = {
         .enable_level = 0,
         .dir_clockwise = 0,
-        .resolution_hz = 1000000,
+        .resolution_hz = 500000,
         .start_freq_hz = 100,
         .end_freq_hz = 100,
-        .accel_samples = 100,
-        .uniform_speed_hz = 2000,
-        .decel_samples = 100
+        .accel_samples = 250,
+        .uniform_speed_hz = 500,
+        .decel_samples = 250,
+        .microstep = TMC2208_MICROSTEP_4
     };
 
-        tmc2208_move_steps(&config, &motor_config, 1000);
-        tmc2208_move_steps(&config, &motor_config, -1000);
+    // Teste the step move without acceleration and deceleration
+    tmc2208_move_steps(&config_io_motor1, &motor1_config, 1600, false, false);
+    tmc2208_move_steps(&config_io_motor1, &motor1_config, -1600, false, false);
+    // Teste the step move with acceleration and deceleration
+    tmc2208_move_steps(&config_io_motor1, &motor1_config, 1100, true, true);
+    tmc2208_move_steps(&config_io_motor1, &motor1_config, -1100, true, true);
 
-        motor_config.uniform_speed_hz = 500;
-        tmc2208_move_steps(&config, &motor_config, -2000);
-
-        motor_config.uniform_speed_hz = 20;
-        motor_config.accel_samples = 5;
-        motor_config.decel_samples = 5;
-        motor_config.start_freq_hz = 10;
-        motor_config.end_freq_hz = 10;
-        tmc2208_move_steps(&config, &motor_config, -400);
-
-        // task delay
-        vTaskDelay(4000 / portTICK_PERIOD_MS);
-    
+    // Test the uniform continous move
+    // Enable motor with the encoder
+    tmc2208_enable(&config_io_motor1, &motor1_config);
+    // Set the speed
+    motor1_config.uniform_speed_hz = 10;
+    // Set the direction
+    tmc2208_set_dir(&config_io_motor1, &motor1_config, TMC2208_DIR_CCW);
+    // Move 400 steps
+    uint32_t steps = 400;
+    while (1) {
+        tmc2208_uniform_move_steps(&config_io_motor1, &motor1_config, 10);
+        steps -= 10;
+        if(steps == 0) {
+            break;
+        }
     }
-
-    // tmc2208_test(&config);
+    // Disable motor
+    tmc2208_disable(&config_io_motor1, &motor1_config);
 
 }
