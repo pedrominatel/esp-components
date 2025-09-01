@@ -46,7 +46,8 @@ static esp_err_t shtc3_wake(i2c_master_dev_handle_t dev_handle)
     
     ret = i2c_master_transmit(dev_handle, read_reg, 2, -1);
     ESP_RETURN_ON_ERROR(ret, TAG, "Failed to wake up SHTC3 sensor");
-
+    esp_rom_delay_us(SHTC3_WARMUP_US); //We need some time for sensor warm-up after wake
+    
     return ret;
 }
 
