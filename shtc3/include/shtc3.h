@@ -19,6 +19,7 @@ extern "C" {
 
 // SHTC3 I2C address
 #define SHTC3_I2C_ADDR          ((uint8_t)0x70) // I2C address of SHTC3 sensor
+#define SHTC3_WARMUP_US         (240)           // Warm-up for SHTC3 sensor in us (typical 180, max 240)
 
 // SHTC3 register addresses write only
 typedef enum {
