@@ -1,0 +1,4 @@
+dependencies:
+  pedrominatel/hp203b:
+    version: "*"
+    override_path: '../../../'
