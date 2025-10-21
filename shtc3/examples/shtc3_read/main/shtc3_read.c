@@ -55,6 +55,7 @@ i2c_master_bus_handle_t i2c_bus_init(uint8_t sda_io, uint8_t scl_io)
 
 void app_main(void)
 {
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
     i2c_master_bus_handle_t bus_handle = i2c_bus_init(SHTC3_SDA_GPIO, SHTC3_SCL_GPIO);
     shtc3_handle = shtc3_device_create(bus_handle, SHTC3_I2C_ADDR, CONFIG_SHTC3_I2C_CLK_SPEED_HZ);
     ESP_LOGI(TAG, "Sensor initialization success");
@@ -78,5 +79,9 @@ void app_main(void)
     } else {
         ESP_LOGE(TAG, "SHTC3 sensor not found");
         shtc3_device_delete(shtc3_handle);
+    }
+
+    while (1) {
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
