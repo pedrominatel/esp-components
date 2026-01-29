@@ -1,0 +1,41 @@
+menu "Grove LCD RGB Backlight v4.0 Configuration"
+    config GROVE_LCD_I2C_NUM
+        int "I2C Port Number"
+        default 0
+        help
+            I2C port number for Grove LCD
+
+    config GROVE_LCD_I2C_SDA
+        int "SDA GPIO Number"
+        default 2
+        help
+            GPIO number for I2C SDA signal
+
+    config GROVE_LCD_I2C_SCL
+        int "SCL GPIO Number"
+        default 1
+        help
+            GPIO number for I2C SCL signal
+
+    config GROVE_LCD_I2C_CLK_SPEED_HZ
+        int "I2C Clock Speed (Hz)"
+        default 100000
+        help
+            I2C clock speed in Hz
+
+    config GROVE_LCD_I2C_ADDR
+        hex "I2C Address (LCD)"
+        default 0x3E
+        help
+            I2C address of Grove LCD (default: 0x3E)
+
+    config GROVE_LCD_RGB_ADDR
+        hex "I2C Address (RGB)"
+        default 0x62
+        help
+            I2C address of Grove RGB backlight.
+            Default 0x62 for PCA9632 (old version)
+            Use 0x30 for SGM31323 (new version)
+            Run i2c-detect or similar tool to verify actual address
+
+endmenu

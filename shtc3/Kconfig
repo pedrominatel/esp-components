@@ -10,14 +10,14 @@ menu "Driver SHTC3 Sensor"
 
         config SHTC3_I2C_SDA
             int "I2C SDA pin"
-            default 17
+            default 2
             range 0 55
             help
                 Set the I2C SDA pin for the data signal.
 
         config SHTC3_I2C_SCL
             int "I2C SCL pin"
-            default 18
+            default 1
             range 0 55
             help
                 Set the I2C SCL pin for the clock signal.

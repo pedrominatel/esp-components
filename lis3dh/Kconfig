@@ -2,13 +2,13 @@ menu "LIS3DH Accelerometer Configuration"
 
     config LIS3DH_I2C_SDA_PIN
         int "SDA pin number"
-        default 21
+        default 2
         help
             I2C SDA pin number for LIS3DH sensor communication.
 
     config LIS3DH_I2C_SCL_PIN
         int "SCL pin number"
-        default 20
+        default 1
         help
             I2C SCL pin number for LIS3DH sensor communication.
 
