@@ -6,13 +6,9 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include <math.h>
-#include <time.h>
-#include <sys/time.h>
 #include "esp_log.h"
 #include "esp_err.h"
 #include "esp_check.h"
-#include "include/shtc3.h"
 #include "shtc3.h"
 
 static const char *TAG = "SHTC3";
@@ -25,10 +21,14 @@ i2c_master_dev_handle_t shtc3_device_create(i2c_master_bus_handle_t bus_handle, 
         .scl_speed_hz = dev_speed,
     };
 
-    i2c_master_dev_handle_t dev_handle;
+    i2c_master_dev_handle_t dev_handle = NULL;
 
     // Add device to the I2C bus
-    ESP_ERROR_CHECK(i2c_master_bus_add_device(bus_handle, &dev_cfg, &dev_handle));
+    esp_err_t ret = i2c_master_bus_add_device(bus_handle, &dev_cfg, &dev_handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to add SHTC3 device to I2C bus: %s", esp_err_to_name(ret));
+        return NULL;
+    }
 
     return dev_handle;
 }
@@ -66,9 +66,11 @@ static esp_err_t shtc3_sleep(i2c_master_dev_handle_t dev_handle)
 esp_err_t shtc3_get_id(i2c_master_dev_handle_t dev_handle, uint8_t *id)
 {
     esp_err_t ret;
-    shtc3_register_rw_t reg_addr = SHTC3_REG_READ_ID;
+    shtc3_register_w_t reg_addr = SHTC3_REG_READ_ID;
     uint8_t read_reg[2] = { reg_addr >> 8, reg_addr & 0xff };
     uint8_t b_read[2] = {0};
+
+    ESP_RETURN_ON_FALSE(id, ESP_ERR_INVALID_ARG, TAG, "Invalid pointer: id cannot be NULL");
 
     shtc3_wake(dev_handle);
     ret = i2c_master_transmit_receive(dev_handle, read_reg, 2, b_read, 2, 200);
@@ -78,17 +80,20 @@ esp_err_t shtc3_get_id(i2c_master_dev_handle_t dev_handle, uint8_t *id)
     id[0] = b_read[0];
     id[1] = b_read[1];
 
+    shtc3_sleep(dev_handle);
     return ret;
 }
 
- esp_err_t shtc3_get_th(i2c_master_dev_handle_t dev_handle, shtc3_register_rw_t reg, float *data1, float *data2)
+esp_err_t shtc3_get_th(i2c_master_dev_handle_t dev_handle, shtc3_register_rw_t reg, float *data1, float *data2)
 {
     esp_err_t ret;
     uint8_t b_read[6] = {0};
     uint8_t read_reg[2] = { reg >> 8, reg & 0xff };
 
+    ESP_RETURN_ON_FALSE(data1 && data2, ESP_ERR_INVALID_ARG, TAG, "Invalid pointers: data1 and data2 cannot be NULL");
+
     shtc3_wake(dev_handle);
-    // Read 4 bytes of data from the sensor
+    // Read 6 bytes of data from the sensor
     ret = i2c_master_transmit_receive(dev_handle, read_reg, 2, b_read, 6, 200);
     ESP_RETURN_ON_ERROR(ret, TAG, "Failed to read data from SHTC3 sensor");
     shtc3_sleep(dev_handle);

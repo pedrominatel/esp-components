@@ -1,0 +1,6 @@
+version: "1.0.0"
+description: "LIS3DH 3-axis accelerometer component for ESP-IDF"
+url: "https://github.com/espressif/esp-idf"
+
+dependencies:
+  idf: ">=5.0"
