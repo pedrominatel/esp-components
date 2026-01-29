@@ -1,0 +1,44 @@
+menu "LIS3DH Accelerometer Configuration"
+
+    config LIS3DH_I2C_SDA_PIN
+        int "SDA pin number"
+        default 21
+        help
+            I2C SDA pin number for LIS3DH sensor communication.
+
+    config LIS3DH_I2C_SCL_PIN
+        int "SCL pin number"
+        default 20
+        help
+            I2C SCL pin number for LIS3DH sensor communication.
+
+    config LIS3DH_I2C_CLK_SPEED
+        int "I2C clock speed (Hz)"
+        default 400000
+        range 100000 1000000
+        help
+            I2C clock speed in Hz. Typical range is 100kHz to 1MHz.
+            Default is 400kHz (standard mode).
+
+    choice LIS3DH_I2C_ADDRESS
+        prompt "LIS3DH I2C Address"
+        default LIS3DH_I2C_ADDR_HIGH
+        help
+            Select the I2C address based on the SA0 pin configuration.
+            SA0 = 0: 0x18
+            SA0 = 1: 0x19
+
+        config LIS3DH_I2C_ADDR_LOW
+            bool "0x18 (SA0 = 0)"
+
+        config LIS3DH_I2C_ADDR_HIGH
+            bool "0x19 (SA0 = 1)"
+
+    endchoice
+
+    config LIS3DH_I2C_ADDRESS
+        hex
+        default 0x18 if LIS3DH_I2C_ADDR_LOW
+        default 0x19 if LIS3DH_I2C_ADDR_HIGH
+
+endmenu
