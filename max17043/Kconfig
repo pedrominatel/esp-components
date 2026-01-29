@@ -1,0 +1,32 @@
+menu "Max17043 Configuration"
+    config MAX17043_I2C_NUM
+        int "I2C Port Number"
+        default 0
+        help
+            I2C port number for MAX17043 sensor
+
+    config MAX17043_I2C_SDA
+        int "SDA GPIO Number"
+        default 21
+        help
+            GPIO number for I2C SDA signal
+
+    config MAX17043_I2C_SCL
+        int "SCL GPIO Number"
+        default 22
+        help
+            GPIO number for I2C SCL signal
+
+    config MAX17043_I2C_CLK_SPEED_HZ
+        int "I2C Clock Speed (Hz)"
+        default 100000
+        help
+            I2C clock speed in Hz
+
+    config MAX17043_I2C_ADDR
+        hex "I2C Address"
+        default 0x36
+        help
+            I2C address of MAX17043 fuel gauge (default: 0x36)
+
+endmenu

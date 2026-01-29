@@ -1,0 +1,4 @@
+dependencies:
+  pedrominatel/max17043:
+    version: "*"
+    override_path: '../../../'
