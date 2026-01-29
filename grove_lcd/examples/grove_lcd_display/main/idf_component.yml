@@ -1,0 +1,4 @@
+dependencies:
+  pedrominatel/grove_lcd:
+    version: "*"
+    override_path: '../../../'

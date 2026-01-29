@@ -1,0 +1,19 @@
+#ifndef GROVE_LCD_CONFIG_H
+#define GROVE_LCD_CONFIG_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define GROVE_LCD_I2C_SDA_PIN       CONFIG_GROVE_LCD_I2C_SDA
+#define GROVE_LCD_I2C_SCL_PIN       CONFIG_GROVE_LCD_I2C_SCL
+#define GROVE_LCD_I2C_PORT          CONFIG_GROVE_LCD_I2C_NUM
+#define GROVE_LCD_I2C_FREQ_HZ       CONFIG_GROVE_LCD_I2C_CLK_SPEED_HZ
+#define GROVE_LCD_I2C_ADDR          CONFIG_GROVE_LCD_I2C_ADDR
+#define GROVE_LCD_RGB_ADDR          CONFIG_GROVE_LCD_RGB_ADDR
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* GROVE_LCD_CONFIG_H */

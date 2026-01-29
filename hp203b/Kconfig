@@ -10,14 +10,14 @@ menu "Driver HP203B Sensor"
 
         config HP203B_I2C_SDA
             int "I2C SDA pin"
-            default 10
+            default 2
             range 0 55
             help
                 Set the I2C SDA pin for the data signal.
 
         config HP203B_I2C_SCL
             int "I2C SCL pin"
-            default 8
+            default 1
             range 0 55
             help
                 Set the I2C SCL pin for the clock signal.

@@ -7,13 +7,13 @@ menu "Max17043 Configuration"
 
     config MAX17043_I2C_SDA
         int "SDA GPIO Number"
-        default 21
+        default 2
         help
             GPIO number for I2C SDA signal
 
     config MAX17043_I2C_SCL
         int "SCL GPIO Number"
-        default 22
+        default 1
         help
             GPIO number for I2C SCL signal
 
