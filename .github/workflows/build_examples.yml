@@ -1,4 +1,4 @@
-name: 'build'
+name: 'Build Component Examples'
 
 on:
   push:
@@ -11,21 +11,30 @@ on:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        idf_ver: ["release-v5.3", "latest"]
+    name: Build examples with ESP-IDF ${{ matrix.idf_ver }} for ${{ matrix.idf_target }}
     runs-on: ubuntu-22.04
     container: espressif/idf:${{ matrix.idf_ver }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        idf_ver: ["release-v5.3", "latest"]
+        idf_target: ["esp32", "esp32s3", "esp32c3"]
     steps:
-    - name: Checkout repo
+    - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+
     - name: Install idf-build-apps
       shell: bash
       run: |
         . ${IDF_PATH}/export.sh
         python3 -m pip install idf-build-apps==2.4.3
-    - name: Build examples
+
+    - name: Build examples for ${{ matrix.idf_target }}
       shell: bash
       run: |
         . ${IDF_PATH}/export.sh
-        idf-build-apps build
+        idf-build-apps build --target ${{ matrix.idf_target }} --recursive --build-dir build_${{ matrix.idf_target }}
