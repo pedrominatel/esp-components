@@ -11,7 +11,7 @@ on:
 
 jobs:
   build:
-    name: Build examples with ESP-IDF ${{ matrix.idf_ver }}
+    name: Build examples with ESP-IDF ${{ matrix.idf_ver }} for ${{ matrix.idf_target }}
     strategy:
       fail-fast: false
       matrix:
@@ -24,13 +24,13 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: 'recursive'
-    
+
     - name: Install idf-build-apps
       shell: bash
       run: |
         . ${IDF_PATH}/export.sh
         python3 -m pip install idf-build-apps==2.4.3
-    
+
     - name: Build examples for ${{ matrix.idf_target }}
       shell: bash
       run: |
