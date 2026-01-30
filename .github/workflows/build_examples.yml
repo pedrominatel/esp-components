@@ -12,13 +12,15 @@ on:
 jobs:
   build:
     name: Build examples with ESP-IDF ${{ matrix.idf_ver }} for ${{ matrix.idf_target }}
+    runs-on: ubuntu-22.04
+    container: espressif/idf:${{ matrix.idf_ver }}
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
         idf_ver: ["release-v5.3", "latest"]
         idf_target: ["esp32", "esp32s3", "esp32c3"]
-    runs-on: ubuntu-22.04
-    container: espressif/idf:${{ matrix.idf_ver }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
