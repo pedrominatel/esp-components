@@ -238,8 +238,8 @@ idf.py monitor
 ## CI/CD
 
 - **Build Testing:** Examples are automatically built and tested against:
-  - ESP-IDF versions: v5.3 and latest
-  - Target chips: ESP32, ESP32-S3, ESP32-C3
+  - ESP-IDF versions: v5.3, v5.4, v5.5, and latest
+  - Target chips: ESP32, ESP32-S3, ESP32-C3, ESP32-C6
   - All examples in component folders and the examples directory
 - **Component Publishing:** Components are automatically published to the registry on push to main
 
