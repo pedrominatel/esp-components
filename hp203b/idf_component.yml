@@ -1,4 +1,4 @@
-version: 0.1.0
+version: 0.2.0
 description: HP203B Pressure and Temperature Sensor Driver for ESP-IDF
 url: https://github.com/pedrominatel/esp-components/tree/main/hp203b
 repository: https://github.com/pedrominatel/esp-components.git
