@@ -1,4 +1,4 @@
-version: "1.0.0"
+version: "1.1.0"
 description: I2C driver template for ESP-IDF
 url: https://github.com/pedrominatel/esp-components
 dependencies:

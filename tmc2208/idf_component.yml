@@ -1,4 +1,4 @@
-version: 0.0.1
+version: 0.1.0
 description: TMC2202/08/22 stepper motor driver for the ESP-IDF
 url: https://github.com/pedrominatel/esp-components/tree/main/tmc2208
 repository: https://github.com/pedrominatel/esp-components.git

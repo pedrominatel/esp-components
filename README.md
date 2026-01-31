@@ -22,7 +22,7 @@ Each component is written in C for the ESP-IDF build system and follows a consis
 | **MC3479** | mCube | I²C | 3-Axis accel, ±2–16g, Low-power modes, Interrupts | Motion detection, step counting, tilt |
 | **LIS3DH** | STMicro | I²C/SPI | 3-Axis accel, ±2–16g, 2µA low-power, Self-test | Gesture recognition, activity monitor |
 | **MAX17043** | Maxim | I²C | Fuel gauge, SOC/Voltage, Alert, Sleep mode, Compact | Battery devices, IoT, wearables |
-| **MAX17055** | Maxim | I²C | Advanced fuel gauge, Current, Time-to-empty | Smartphones, tablets, UPS systems |
+| **Grove LCD RGB** | Seeed Studio | I²C | 16x2 LCD, RGB backlight, 16.8M colors, Custom chars | Display text, status, sensor readings |
 | **TMC2208** | Trinamic | UART/SPI | Stepper driver, 256µsteps, Stealthchop, Standalone | 3D printers, CNC, robotics |
 
 ---
@@ -129,17 +129,20 @@ Each component is written in C for the ESP-IDF build system and follows a consis
 
 ---
 
-#### MAX17055 – Advanced Fuel Gauge with ModelGauge m5
-- **Interface:** I²C  
-- **Manufacturer:** Maxim Integrated  
+### Display Modules
+
+#### Grove LCD RGB Backlight v4.0 – 16x2 Character LCD Display
+- **Interface:** I²C (dual addresses)  
+- **Manufacturer:** Seeed Studio  
 - **Features:**  
-  - Advanced fuel gauge with better accuracy than MAX17043  
-  - Current measurement (charge/discharge rates)  
-  - Time-to-empty calculation  
-  - Configurable alert thresholds  
-  - Register-based configuration  
-- **API:** Read SOC, voltage, current, time-to-empty, configuration  
-- **Use cases:** Smartphones, tablets, high-accuracy battery monitoring, UPS systems
+  - 16 columns × 2 rows character display  
+  - Full RGB backlight control (16.8 million colors)  
+  - AIP31068L LCD controller (0x3E)  
+  - SGM31323 RGB LED driver (0x62)  
+  - Custom character support  
+  - Cursor control and positioning  
+- **API:** Print text, set cursor, control RGB backlight, clear display, custom characters  
+- **Use cases:** Status displays, sensor readouts, menu systems, user interfaces
 
 ---
 
