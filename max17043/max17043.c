@@ -296,7 +296,6 @@ esp_err_t max17043_quick_start(max17043_handle_t handle)
     /* Write 0x4000 to MODE register for quick start */
     data[0] = reg;
     data[1] = 0x40;
-    uint8_t mode_val = 0x00;
 
     esp_err_t ret = i2c_master_transmit(dev->i2c_dev, data, 2, 1000);
     if (ret != ESP_OK) {
@@ -306,3 +305,4 @@ esp_err_t max17043_quick_start(max17043_handle_t handle)
 
     ESP_LOGI(TAG, "MAX17043 quick started");
     return ESP_OK;
+}
