@@ -86,7 +86,7 @@ static bool parse_wsc_credential(const uint8_t *payload, size_t payload_len, wif
     bool ssid_found = false;
     bool password_found = false;
     
-    ESP_LOGI(TAG, "Parsing WSC credential, payload length: %d bytes", payload_len);
+    ESP_LOGI(TAG, "Parsing WSC credential, payload length: %zu bytes", payload_len);
     
     while (pos + 4 <= payload_len) {
         uint16_t attr_id = read_be16(&payload[pos]);
@@ -94,11 +94,11 @@ static bool parse_wsc_credential(const uint8_t *payload, size_t payload_len, wif
         pos += 4;
         
         if (pos + attr_len > payload_len) {
-            ESP_LOGW(TAG, "Invalid attribute length at pos %d", pos);
+            ESP_LOGW(TAG, "Invalid attribute length at pos %zu", pos);
             break;
         }
         
-        ESP_LOGD(TAG, "WSC Attribute: 0x%04X, Length: %d", attr_id, attr_len);
+        ESP_LOGD(TAG, "WSC Attribute: 0x%04X, Length: %u", attr_id, attr_len);
         
         switch (attr_id) {
             case WSC_ID_CREDENTIAL:
@@ -157,13 +157,13 @@ static bool parse_ndef_message(const uint8_t *data, size_t len, wifi_credentials
 {
     size_t pos = 0;
     
-    ESP_LOGI(TAG, "Parsing NDEF message, total length: %d bytes", len);
+    ESP_LOGI(TAG, "Parsing NDEF message, total length: %zu bytes", len);
     
     while (pos < len) {
         // Read NDEF record header
         uint8_t header = data[pos++];
         if (header == 0x00 || header == 0xFF) {
-            ESP_LOGD(TAG, "Skipping padding byte at pos %d", pos - 1);
+            ESP_LOGD(TAG, "Skipping padding byte at pos %zu", pos - 1);
             continue;
         }
         
@@ -199,7 +199,7 @@ static bool parse_ndef_message(const uint8_t *data, size_t len, wifi_credentials
             id_len = data[pos++];
         }
         
-        ESP_LOGI(TAG, "Type Length: %d, Payload Length: %d, ID Length: %d", 
+        ESP_LOGI(TAG, "Type Length: %u, Payload Length: %u, ID Length: %u", 
                  type_len, payload_len, id_len);
         
         if (pos + type_len + id_len + payload_len > len) {
