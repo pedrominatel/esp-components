@@ -222,7 +222,7 @@ void app_main(void)
     ret = xTaskCreate(
         lc709203_read_task,
         "lc709203_read_task",
-        2048,
+        4096,
         sensor_handle,
         5,
         NULL

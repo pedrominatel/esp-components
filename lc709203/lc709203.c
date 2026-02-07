@@ -598,12 +598,6 @@ esp_err_t lc709203_trigger_update(lc709203_handle_t handle)
     static uint32_t update_count = 0;
     update_count++;
 
-    /* Ensure sensor is in operational mode */
-    esp_err_t ret = lc709203_set_power_mode(handle, LC709203_POWER_MODE_OPERATIONAL);
-    if (ret != ESP_OK) {
-        return ret;
-    }
-
     /* Refresh temperature in I2C mode every 5 readings (keeps algorithm active) */
     if (update_count % 5 == 0) {
         lc709203_set_cell_temp(handle, 25);
@@ -617,7 +611,7 @@ esp_err_t lc709203_trigger_update(lc709203_handle_t handle)
 
     /* Reading cell temperature triggers the IC to refresh all measurements */
     uint16_t temp;
-    ret = lc709203_read_cell_temp(handle, &temp);
+    esp_err_t ret = lc709203_read_cell_temp(handle, &temp);
     if (ret != ESP_OK) {
         return ret;
     }
