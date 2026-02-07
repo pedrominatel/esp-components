@@ -21,7 +21,9 @@ Each component is written in C for the ESP-IDF build system and follows a consis
 | **HP203B** | Hope Micro | I²C | Pressure, 1.7–3.6V, 300–1100 hPa, Altitude calc | Weather, altitude detection, drones |
 | **MC3479** | mCube | I²C | 3-Axis accel, ±2–16g, Low-power modes, Interrupts | Motion detection, step counting, tilt |
 | **LIS3DH** | STMicro | I²C/SPI | 3-Axis accel, ±2–16g, 2µA low-power, Self-test | Gesture recognition, activity monitor |
+| **LC709203F** | ON Semi | I²C/SMBus | Fuel gauge, RSOC/ITE, CRC-8, Thermistor, Auto-detect | Battery monitoring, IoT, portable devices |
 | **MAX17043** | Maxim | I²C | Fuel gauge, SOC/Voltage, Alert, Sleep mode, Compact | Battery devices, IoT, wearables |
+| **NT3H2111** | NXP | I²C/NFC | NFC Tag, 1KB EEPROM, Dual access, NDEF, WiFi provisioning | NFC tags, contactless data, WiFi setup |
 | **Grove LCD RGB** | Seeed Studio | I²C | 16x2 LCD, RGB backlight, 16.8M colors, Custom chars | Display text, status, sensor readings |
 | **TMC2208** | Trinamic | UART/SPI | Stepper driver, 256µsteps, Stealthchop, Standalone | 3D printers, CNC, robotics |
 
@@ -115,6 +117,25 @@ Each component is written in C for the ESP-IDF build system and follows a consis
 
 ### Power Management & Fuel Gauge
 
+#### LC709203F – Ultra-Accurate Battery Fuel Gauge with CRC
+- **Interface:** I²C/SMBus with CRC-8  
+- **Manufacturer:** ON Semiconductor  
+- **Features:**  
+  - SMBus protocol with automatic CRC-8 error detection  
+  - Voltage measurement in 1mV resolution  
+  - RSOC (Relative State of Charge) in 0.1% resolution  
+  - ITE (Indicator to Empty) in 0.1% resolution  
+  - Automatic thermistor detection (I2C or thermistor mode)  
+  - Current direction control (charge/discharge/auto)  
+  - Configurable battery capacity (100mAh–3000mAh)  
+  - Temperature compensation for accuracy  
+  - Sleep mode with ultra-low power consumption  
+  - Status register and IC version readback  
+- **API:** Read voltage, RSOC, ITE, temperature, current direction, auto thermistor detect, trigger updates, set capacity, alarms  
+- **Use cases:** Portable devices, IoT nodes, battery-powered sensors, wearables, power banks
+
+---
+
 #### MAX17043 – Ultra-Compact Fuel Gauge
 - **Interface:** I²C  
 - **Manufacturer:** Maxim Integrated  
@@ -128,7 +149,27 @@ Each component is written in C for the ESP-IDF build system and follows a consis
 - **Use cases:** Battery-powered devices, IoT nodes, portable electronics, wearables
 
 ---
+NFC & RFID
 
+#### NT3H2111 – NFC Forum Type 2 Tag with I²C Interface
+- **Interface:** I²C (up to 400 kHz) + NFC RF (13.56 MHz)  
+- **Manufacturer:** NXP Semiconductors  
+- **Features:**  
+  - Dual interface: I²C and NFC RF simultaneous access  
+  - 1KB EEPROM user memory (888 bytes usable)  
+  - SRAM buffer for fast data exchange (64 bytes)  
+  - NFC Forum Type 2 Tag compliant  
+  - NDEF message support with WiFi Simple Configuration (WSC)  
+  - Field detection pin with interrupt support  
+  - Session registers for RF status monitoring  
+  - Password protection and memory locking  
+  - Energy harvesting from NFC field  
+- **API:** Read/Write blocks, field detection, NDEF parsing, WiFi credential extraction, session register monitoring  
+- **Use cases:** NFC tags, contactless data exchange, WiFi provisioning, secure pairing, asset tracking, smart posters
+
+---
+
+### 
 ### Display Modules
 
 #### Grove LCD RGB Backlight v4.0 – 16x2 Character LCD Display
