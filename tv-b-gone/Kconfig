@@ -1,0 +1,10 @@
+menu "TV-B-Gone IR Configuration"
+
+    config TVBGONE_IR_TX_GPIO
+        int "IR TX GPIO pin"
+        default 4
+        range 0 55
+        help
+            GPIO pin used as IR transmitter output for the TV-B-Gone component.
+
+endmenu
