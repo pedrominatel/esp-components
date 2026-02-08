@@ -1,0 +1,4 @@
+dependencies:
+  pedrominatel/lc709203:
+    version: "*"
+    override_path: '../../../'
