@@ -1,0 +1,4 @@
+dependencies:
+  pedrominatel/tv-b-gone:
+    version: "*"
+    override_path: '../../../'

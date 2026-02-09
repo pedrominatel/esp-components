@@ -1,0 +1,5 @@
+version: "0.1.0"
+description: TV-B-Gone style IR transmitter component for ESP-IDF
+url: https://github.com/pedrominatel/esp-components
+dependencies:
+  idf: ">=5.0"
