@@ -1,6 +1,16 @@
-version: "1.1.0"
+version: "1.1.1"
 description: "LIS3DH 3-axis accelerometer component for ESP-IDF"
-url: "https://github.com/espressif/esp-idf"
+url: "https://github.com/pedrominatel/esp-components/tree/main/lis3dh"
+repository: "https://github.com/pedrominatel/esp-components.git"
+issues: "https://github.com/pedrominatel/esp-components/issues"
+maintainers:
+  - "Pedro Minatel <pminatel@gmail.com>"
+tags:
+  - lis3dh
+  - accelerometer
+  - sensor
+  - i2c
+  - driver
 
 dependencies:
   idf: ">=5.0"

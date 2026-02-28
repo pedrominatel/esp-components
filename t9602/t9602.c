@@ -28,6 +28,13 @@
  */
 i2c_master_dev_handle_t t9602_device_create(i2c_master_bus_handle_t bus_handle, const uint16_t dev_addr, const uint32_t dev_speed)
 {
+    /* Probe device before adding to bus */
+    esp_err_t ret = i2c_master_probe(bus_handle, dev_addr, 1000);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "T9602 device not found at address 0x%02X: %s", dev_addr, esp_err_to_name(ret));
+        return NULL;
+    }
+    ESP_LOGI(TAG, "T9602 device found at address 0x%02X", dev_addr);
 
     i2c_device_config_t dev_cfg = {
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,
@@ -38,7 +45,11 @@ i2c_master_dev_handle_t t9602_device_create(i2c_master_bus_handle_t bus_handle, 
     i2c_master_dev_handle_t dev_handle;
 
     // Add device to the I2C bus
-    ESP_ERROR_CHECK(i2c_master_bus_add_device(bus_handle, &dev_cfg, &dev_handle));
+    ret = i2c_master_bus_add_device(bus_handle, &dev_cfg, &dev_handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to add T9602 device to I2C bus: %s", esp_err_to_name(ret));
+        return NULL;
+    }
 
     return dev_handle;
 }

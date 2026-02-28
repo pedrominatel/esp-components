@@ -16,6 +16,14 @@ static const char *TAG = "NT3H2111";
 
 nt3h2111_handle_t nt3h2111_device_create(i2c_master_bus_handle_t bus_handle, const uint16_t dev_addr, const uint32_t dev_speed)
 {
+    /* Probe device before adding to bus */
+    esp_err_t ret = i2c_master_probe(bus_handle, dev_addr, 1000);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "NT3H2111 device not found at address 0x%02X: %s", dev_addr, esp_err_to_name(ret));
+        return NULL;
+    }
+    ESP_LOGI(TAG, "NT3H2111 device found at address 0x%02X", dev_addr);
+
     i2c_device_config_t dev_cfg = {
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,
         .device_address = dev_addr,
@@ -25,7 +33,7 @@ nt3h2111_handle_t nt3h2111_device_create(i2c_master_bus_handle_t bus_handle, con
     i2c_master_dev_handle_t dev_handle = NULL;
 
     // Add device to the I2C bus
-    esp_err_t ret = i2c_master_bus_add_device(bus_handle, &dev_cfg, &dev_handle);
+    ret = i2c_master_bus_add_device(bus_handle, &dev_cfg, &dev_handle);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to add NT3H2111 device to I2C bus: %s", esp_err_to_name(ret));
         return NULL;
