@@ -7,6 +7,11 @@ extern "C" {
 #include "esp_err.h"
 #include "driver/i2c_master.h"
 
+/* Optional: i2c_bus (espressif/esp-iot-solution) compatibility */
+#if __has_include("i2c_bus.h")
+#include "i2c_bus.h"
+#endif
+
 /* I2C address (fixed, not configurable) */
 #define SGP30_DEFAULT_ADDRESS           0x58
 
@@ -33,7 +38,7 @@ typedef struct {
 } sgp30_baseline_t;
 
 /**
- * @brief  Initialize the SGP30 sensor.
+ * @brief  Initialize the SGP30 sensor using the native ESP-IDF i2c_master API.
  *
  * Adds the sensor to the given I2C master bus, probes for presence, and
  * sends the Init_air_quality command to start the on-chip algorithm.
@@ -45,8 +50,30 @@ typedef struct {
  */
 esp_err_t sgp30_init(i2c_master_bus_handle_t bus_handle);
 
+#if __has_include("i2c_bus.h")
+/**
+ * @brief  Initialize the SGP30 sensor using an espressif/i2c_bus device handle.
+ *
+ * Use this when the rest of your application already manages I2C through the
+ * i2c_bus component (espressif/esp-iot-solution). The device must be created
+ * before calling this function:
+ * @code
+ *   i2c_bus_device_handle_t dev = i2c_bus_device_create(bus, SGP30_DEFAULT_ADDRESS, 100000);
+ *   sgp30_init_i2cbus(dev);
+ * @endcode
+ *
+ * @param[in] dev_handle  An already-created i2c_bus device handle for the SGP30.
+ * @return
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if dev_handle is NULL
+ *   - ESP_FAIL if the Init_air_quality command fails
+ */
+esp_err_t sgp30_init_i2cbus(i2c_bus_device_handle_t dev_handle);
+#endif
+
 /**
  * @brief  De-initialize the SGP30 sensor and release the device handle.
+ *         Works for both sgp30_init() and sgp30_init_i2cbus() paths.
  */
 void sgp30_denit(void);
 

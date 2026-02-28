@@ -26,6 +26,7 @@ Each component is written in C for the ESP-IDF build system and follows a consis
 | **NT3H2111** | NXP | I²C/NFC | NFC Tag, 1KB EEPROM, Dual access, NDEF, WiFi provisioning | NFC tags, contactless data, WiFi setup |
 | **Grove LCD RGB** | Seeed Studio | I²C | 16x2 LCD, RGB backlight, 16.8M colors, Custom chars | Display text, status, sensor readings |
 | **TMC2208** | Trinamic | UART/SPI | Stepper driver, 256µsteps, Stealthchop, Standalone | 3D printers, CNC, robotics |
+| **SGP30** | Sensirion | I²C | TVOC (ppb) + eCO2 (ppm), Baseline persistence, CRC-8 | Air quality monitoring, IAQ, ventilation |
 
 ---
 
@@ -169,7 +170,25 @@ NFC & RFID
 
 ---
 
-### 
+### Air Quality Sensors
+
+#### SGP30 – Multi-Gas (TVOC + eCO2) Sensor
+- **Interface:** I²C (fixed address 0x58)  
+- **Manufacturer:** Sensirion  
+- **Features:**  
+  - TVOC measurement: 0–60,000 ppb  
+  - eCO2 equivalent: 400–60,000 ppm  
+  - On-chip humidity compensation  
+  - Baseline persistence for calibration across power cycles  
+  - CRC-8 error detection on every response word  
+  - Compatible with both the raw `i2c_master` API and the `espressif/i2c_bus` component  
+  - Supply range: 1.62–1.98 V  
+  > **Note:** SGP30 is end-of-life. Sensirion recommends the SGP40/SGP41 for new designs.  
+- **API:** `sgp30_init`, `sgp30_measure`, `sgp30_get_baseline`, `sgp30_set_baseline`, `sgp30_soft_reset`, `sgp30_init_i2cbus`  
+- **Use cases:** Indoor air quality monitoring, demand-controlled ventilation, smart home, IAQ logging
+
+---
+
 ### Display Modules
 
 #### Grove LCD RGB Backlight v4.0 – 16x2 Character LCD Display

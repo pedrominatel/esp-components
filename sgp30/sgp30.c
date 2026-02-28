@@ -6,14 +6,28 @@
 #include "esp_log.h"
 #include "sgp30.h"
 
+#if __has_include("i2c_bus.h")
+#include "i2c_bus.h"
+#endif
+
 #define TAG "sgp30"
 
 /* CRC-8 parameters per SGP30 datasheet */
 #define SGP30_CRC8_POLYNOMIAL  0x31
 #define SGP30_CRC8_INIT        0xFF
 
-/* I2C device handle (module-level, single instance) */
+/* Bus mode — selects which I2C API is used */
+typedef enum {
+    SGP30_BUS_NATIVE = 0,  /*!< Raw i2c_master driver (default) */
+    SGP30_BUS_I2C_BUS,     /*!< espressif/i2c_bus component      */
+} sgp30_bus_type_t;
+
+static sgp30_bus_type_t        sgp30_bus_type   = SGP30_BUS_NATIVE;
 static i2c_master_dev_handle_t sgp30_dev_handle = NULL;
+
+#if __has_include("i2c_bus.h")
+static i2c_bus_device_handle_t sgp30_bus_dev    = NULL;
+#endif
 
 /* ---------------------------------------------------------------------------
  * Internal helpers
@@ -44,6 +58,11 @@ static uint8_t sgp30_crc8(const uint8_t *data, size_t len)
 static esp_err_t sgp30_send_command(uint16_t cmd)
 {
     uint8_t buf[2] = { (uint8_t)(cmd >> 8), (uint8_t)(cmd & 0xFF) };
+#if __has_include("i2c_bus.h")
+    if (sgp30_bus_type == SGP30_BUS_I2C_BUS) {
+        return i2c_bus_write_bytes(sgp30_bus_dev, NULL_I2C_MEM_ADDR, sizeof(buf), buf);
+    }
+#endif
     return i2c_master_transmit(sgp30_dev_handle, buf, sizeof(buf), 100);
 }
 
@@ -62,6 +81,11 @@ static esp_err_t sgp30_send_command_words(uint16_t cmd, uint16_t word0, uint16_t
     buf[5] = (uint8_t)(word1 >> 8);
     buf[6] = (uint8_t)(word1 & 0xFF);
     buf[7] = sgp30_crc8(&buf[5], 2);
+#if __has_include("i2c_bus.h")
+    if (sgp30_bus_type == SGP30_BUS_I2C_BUS) {
+        return i2c_bus_write_bytes(sgp30_bus_dev, NULL_I2C_MEM_ADDR, sizeof(buf), buf);
+    }
+#endif
     return i2c_master_transmit(sgp30_dev_handle, buf, sizeof(buf), 100);
 }
 
@@ -78,7 +102,15 @@ static esp_err_t sgp30_read_words(uint16_t *out, size_t n_words)
         return ESP_ERR_INVALID_ARG;
     }
 
-    esp_err_t err = i2c_master_receive(sgp30_dev_handle, buf, n_bytes, 100);
+    esp_err_t err;
+#if __has_include("i2c_bus.h")
+    if (sgp30_bus_type == SGP30_BUS_I2C_BUS) {
+        err = i2c_bus_read_bytes(sgp30_bus_dev, NULL_I2C_MEM_ADDR, n_bytes, buf);
+    } else
+#endif
+    {
+        err = i2c_master_receive(sgp30_dev_handle, buf, n_bytes, 100);
+    }
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "I2C read error: %s", esp_err_to_name(err));
         return ESP_FAIL;
@@ -144,11 +176,44 @@ esp_err_t sgp30_init(i2c_master_bus_handle_t bus_handle)
 
 void sgp30_denit(void)
 {
+#if __has_include("i2c_bus.h")
+    if (sgp30_bus_type == SGP30_BUS_I2C_BUS) {
+        if (sgp30_bus_dev != NULL) {
+            i2c_bus_device_delete(&sgp30_bus_dev);
+        }
+        sgp30_bus_type = SGP30_BUS_NATIVE;
+        return;
+    }
+#endif
     if (sgp30_dev_handle != NULL) {
         i2c_master_bus_rm_device(sgp30_dev_handle);
         sgp30_dev_handle = NULL;
     }
 }
+
+#if __has_include("i2c_bus.h")
+esp_err_t sgp30_init_i2cbus(i2c_bus_device_handle_t dev_handle)
+{
+    if (dev_handle == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    sgp30_bus_dev  = dev_handle;
+    sgp30_bus_type = SGP30_BUS_I2C_BUS;
+
+    esp_err_t err = sgp30_send_command(SGP30_CMD_INIT_AIR_QUALITY);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Init_air_quality command failed: %s", esp_err_to_name(err));
+        sgp30_bus_dev  = NULL;
+        sgp30_bus_type = SGP30_BUS_NATIVE;
+        return ESP_FAIL;
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(10));
+    ESP_LOGI(TAG, "SGP30 initialized via i2c_bus. Note: first 15 readings return fixed values (400 ppm eCO2 / 0 ppb TVOC) during sensor warm-up.");
+    return ESP_OK;
+}
+#endif
 
 esp_err_t sgp30_measure(sgp30_measurement_t *measurement)
 {
