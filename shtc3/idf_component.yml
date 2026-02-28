@@ -1,4 +1,4 @@
-version: 1.4.0
+version: 1.4.1
 description: SHTC3 Temperature and humidity sensor driver for ESP-IDF
 url: https://github.com/pedrominatel/esp-components/tree/main/shtc3
 repository: https://github.com/pedrominatel/esp-components.git

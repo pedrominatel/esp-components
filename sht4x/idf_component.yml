@@ -1,4 +1,4 @@
-version: 0.2.0
+version: 0.3.0
 description: SHT4X temperature and humidity sensor for the ESP-IDF
 url: https://github.com/pedrominatel/esp-components/
 repository: https://github.com/pedrominatel/esp-components.git

@@ -1,5 +1,14 @@
 #pragma once
 
+/**
+ * @file hp203b.h
+ * @brief HP203B Barometric Pressure Sensor Driver
+ *
+ * @note BREAKING CHANGES in v0.3.0:
+ *       This version uses handle-based API for thread safety.
+ *       See MIGRATION.md for migration instructions from v0.2.0.
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -7,12 +16,42 @@ extern "C" {
 #include "esp_log.h"
 #include "driver/i2c_master.h"
 
-esp_err_t hp203b_init(i2c_master_bus_handle_t bus_handle);
-void hp203b_denit(void);
-int32_t hp203b_get_press(void);
-void hp203b_set_press(uint32_t press_value);
-esp_err_t hp203b_read_press(void);
-esp_err_t hp203b_test(void);
+/**
+ * @brief HP203B device handle
+ */
+typedef void* hp203b_handle_t;
+
+/**
+ * @brief Initialize HP203B sensor
+ * 
+ * @param bus_handle I2C bus handle
+ * @param dev_handle Pointer to store the device handle
+ * @return esp_err_t ESP_OK on success
+ */
+esp_err_t hp203b_init(i2c_master_bus_handle_t bus_handle, hp203b_handle_t *dev_handle);
+
+/**
+ * @brief Deinitialize HP203B sensor
+ * 
+ * @param dev_handle Device handle
+ */
+void hp203b_deinit(hp203b_handle_t dev_handle);
+
+/**
+ * @brief Get pressure value
+ * 
+ * @param dev_handle Device handle
+ * @return int32_t Pressure value
+ */
+int32_t hp203b_get_press(hp203b_handle_t dev_handle);
+
+/**
+ * @brief Read pressure from sensor
+ * 
+ * @param dev_handle Device handle
+ * @return esp_err_t ESP_OK on success
+ */
+esp_err_t hp203b_read_press(hp203b_handle_t dev_handle);
 
 #define HP203B_DEFAULT_ADDRESS              0x76     // (0xEC)>>1
 #define HP203B_CONVERSIONDELAY              100

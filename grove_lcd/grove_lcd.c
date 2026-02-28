@@ -72,6 +72,24 @@ grove_lcd_handle_t grove_lcd_create(i2c_master_bus_handle_t bus_handle, uint8_t 
     dev->lcd_addr = lcd_addr;
     dev->rgb_addr = rgb_addr;
 
+    /* Probe LCD device */
+    esp_err_t ret = i2c_master_probe(bus_handle, lcd_addr, 1000);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "LCD device not found at address 0x%02X: %s", lcd_addr, esp_err_to_name(ret));
+        free(dev);
+        return NULL;
+    }
+    ESP_LOGI(TAG, "LCD device found at address 0x%02X", lcd_addr);
+
+    /* Probe RGB device */
+    ret = i2c_master_probe(bus_handle, rgb_addr, 1000);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "RGB device not found at address 0x%02X: %s", rgb_addr, esp_err_to_name(ret));
+        free(dev);
+        return NULL;
+    }
+    ESP_LOGI(TAG, "RGB device found at address 0x%02X", rgb_addr);
+
     /* Create LCD I2C device */
     i2c_device_config_t lcd_cfg = {
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,
@@ -79,7 +97,7 @@ grove_lcd_handle_t grove_lcd_create(i2c_master_bus_handle_t bus_handle, uint8_t 
         .scl_speed_hz = 100000,
     };
 
-    esp_err_t ret = i2c_master_bus_add_device(bus_handle, &lcd_cfg, &dev->lcd_dev);
+    ret = i2c_master_bus_add_device(bus_handle, &lcd_cfg, &dev->lcd_dev);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to add LCD I2C device at 0x%02X: %s", lcd_addr, esp_err_to_name(ret));
         free(dev);
