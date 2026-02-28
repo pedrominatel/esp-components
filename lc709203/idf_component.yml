@@ -1,4 +1,4 @@
-version: "1.0.0"
+version: "1.0.1"
 description: I2C driver for LC709203 battery fuel gauge
 url: https://github.com/pedrominatel/esp-components
 dependencies:

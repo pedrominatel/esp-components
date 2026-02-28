@@ -16,6 +16,7 @@
 static const char *TAG = "HP203B";
 
 i2c_master_bus_handle_t bus_handle = NULL;
+hp203b_handle_t sensor_handle = NULL;
 
 esp_err_t init_i2c(i2c_master_bus_handle_t *i2c_bus)
 {
@@ -40,10 +41,10 @@ void read_sensor_task(void *pvParameters)
 {     
 
     while(1) {
-        if(hp203b_read_press() == ESP_OK)
+        if(hp203b_read_press(sensor_handle) == ESP_OK)
         {
             uint32_t sample_pa = 0;
-            sample_pa = hp203b_get_press();
+            sample_pa = hp203b_get_press(sensor_handle);
             ESP_LOGI(TAG, "Pressure: %lu Pa", sample_pa);
         }
         vTaskDelay(1000 / portTICK_PERIOD_MS);
@@ -58,7 +59,7 @@ void app_main(void)
     // Initialize the I2C bus
     ESP_ERROR_CHECK(init_i2c(&bus_handle));
 
-    if(hp203b_init(bus_handle) == ESP_OK){
+    if(hp203b_init(bus_handle, &sensor_handle) == ESP_OK){
         ESP_LOGI(TAG, "Sensor initialization ok!");
         xTaskCreate(&read_sensor_task, "read_sensor_task", 2048, NULL, 2, NULL);
     } else {

@@ -1,4 +1,4 @@
-version: 1.0.0
+version: 1.1.0
 description: NT3H2111 NFC/I2C Bridge IC driver for ESP-IDF
 url: https://github.com/pedrominatel/esp-components/tree/main/nt3h2111
 repository: https://github.com/pedrominatel/esp-components.git

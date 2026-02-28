@@ -23,12 +23,10 @@
 
 static const char *TAG = "MC3479 example";
 mc3479_handle_t sensor;
-static QueueHandle_t gpio_evt_queue = NULL;
 
 // task to read the sensor values
 void mc3479_task(void *pvParameters)
 {
-    int16_t x, y, z = {0};
     while(1)
     {
         // Read the acceleration values
@@ -74,11 +72,6 @@ static void mc3479_sensor_init(void)
         return;
     }
     ESP_LOGI(TAG, "Sensor initialization success");
-}
-
-static void mc3479_sensor_denit(void)
-{
-    mc3479_delete(sensor);
 }
 
 static void mc3479_sensor_start(void)
