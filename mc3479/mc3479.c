@@ -112,7 +112,6 @@ static esp_err_t mc3479_read(mc3479_handle_t sensor, const uint8_t reg_start_add
 */
 void mc3479_delete(mc3479_handle_t sensor)
 {
-    mc3479_dev_t *mc3479 = (mc3479_dev_t *) sensor;
     free(sensor);
 }
 
