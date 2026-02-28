@@ -1,0 +1,4 @@
+dependencies:
+  pedrominatel/sgp30:
+    version: "*"
+    override_path: '../../../'

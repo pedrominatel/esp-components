@@ -1,0 +1,18 @@
+version: 0.1.0
+description: SGP30 Multi-Gas (TVOC and CO2eq) Sensor Driver for ESP-IDF
+url: https://github.com/pedrominatel/esp-components/tree/main/sgp30
+repository: https://github.com/pedrominatel/esp-components.git
+issues: https://github.com/pedrominatel/esp-components/issues
+maintainers:
+  - "Pedro Minatel <pminatel@gmail.com>"
+
+tags:
+  - sgp30
+  - sensor
+  - tvoc
+  - eco2
+  - i2c
+  - driver
+
+dependencies:
+  idf: ">=5.3"
