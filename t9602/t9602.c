@@ -13,6 +13,8 @@
 #include "esp_err.h"
 #include "t9602.h"
 
+static const char *TAG = "T9602";
+
 /**
  * @brief Creates and configures an I2C device handle for the T9602 sensor.
  *
