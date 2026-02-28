@@ -1,0 +1,5 @@
+dependencies:
+  pedrominatel/st25dv:
+    version: "*"
+    override_path: '../../../'
+  idf: ">=5.3"

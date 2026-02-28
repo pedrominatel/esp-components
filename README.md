@@ -24,6 +24,7 @@ Each component is written in C for the ESP-IDF build system and follows a consis
 | **LC709203F** | ON Semi | I²C/SMBus | Fuel gauge, RSOC/ITE, CRC-8, Thermistor, Auto-detect | Battery monitoring, IoT, portable devices |
 | **MAX17043** | Maxim | I²C | Fuel gauge, SOC/Voltage, Alert, Sleep mode, Compact | Battery devices, IoT, wearables |
 | **NT3H2111** | NXP | I²C/NFC | NFC Tag, 1KB EEPROM, Dual access, NDEF, WiFi provisioning | NFC tags, contactless data, WiFi setup |
+| **ST25DV** | STMicro | I²C/NFC | ISO 15693 Type 5 Tag, 512 B–8 KB EEPROM, NDEF, EH output, GPO | NFC tags, asset tracking, energy harvesting |
 | **Grove LCD RGB** | Seeed Studio | I²C | 16x2 LCD, RGB backlight, 16.8M colors, Custom chars | Display text, status, sensor readings |
 | **TMC2208** | Trinamic | UART/SPI | Stepper driver, 256µsteps, Stealthchop, Standalone | 3D printers, CNC, robotics |
 | **SGP30** | Sensirion | I²C | TVOC (ppb) + eCO2 (ppm), Baseline persistence, CRC-8 | Air quality monitoring, IAQ, ventilation |
@@ -167,6 +168,25 @@ NFC & RFID
   - Energy harvesting from NFC field  
 - **API:** Read/Write blocks, field detection, NDEF parsing, WiFi credential extraction, session register monitoring  
 - **Use cases:** NFC tags, contactless data exchange, WiFi provisioning, secure pairing, asset tracking, smart posters
+
+---
+
+#### ST25DV – ISO 15693 Type 5 Tag NFC/I2C EEPROM
+- **Interface:** I²C (dual addresses: 0x53 data + 0x57 system config) + NFC RF (13.56 MHz, ISO 15693)  
+- **Manufacturer:** STMicroelectronics  
+- **Features:**  
+  - Variants: ST25DV04K (512 B), ST25DV16K (2 KB), ST25DV64K (8 KB)  
+  - Dual interface: simultaneous I²C and NFC RF access  
+  - Byte-addressed EEPROM with 16-bit register addressing  
+  - NDEF Type 5 Tag support (CC, URI, Text records)  
+  - Configurable GPO interrupt pin (field detect, RF write, mailbox events)  
+  - Energy harvesting output pin (on-demand or automatic modes)  
+  - 256-byte Fast Transfer Mode (FTM) mailbox for RF-to-I2C data exchange  
+  - Configurable per-zone memory protection (up to 4 zones)  
+  - I2C password protection for system configuration  
+  - Memory size auto-detected at init  
+- **API:** `st25dv_device_create`, `st25dv_read_bytes`, `st25dv_write_bytes`, `st25dv_get_uid`, `st25dv_get_mem_size`, `st25dv_ndef_write_cc`, `st25dv_ndef_write_uri`, `st25dv_ndef_write_text`, `st25dv_ndef_read_raw`, `st25dv_is_field_present`, `st25dv_read_it_status`, `st25dv_gpo_configure`, `st25dv_eh_enable`, `st25dv_eh_get_status`  
+- **Use cases:** NFC-enabled smart labels, asset tracking, smart posters, contactless configuration, energy-harvesting sensor nodes
 
 ---
 
