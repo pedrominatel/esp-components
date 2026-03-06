@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "esp_log.h"
 #include "esp_err.h"
@@ -13,6 +14,14 @@
 #include "nt3h2111.h"
 
 static const char *TAG = "NT3H2111";
+
+struct nt3h2111_dev_t {
+    i2c_master_dev_handle_t i2c_dev;
+#if __has_include("i2c_bus.h")
+    i2c_bus_device_handle_t bus_dev;
+    bool use_bus;
+#endif
+};
 
 nt3h2111_handle_t nt3h2111_device_create(i2c_master_bus_handle_t bus_handle, const uint16_t dev_addr, const uint32_t dev_speed)
 {
@@ -30,22 +39,63 @@ nt3h2111_handle_t nt3h2111_device_create(i2c_master_bus_handle_t bus_handle, con
         .scl_speed_hz = dev_speed,
     };
 
-    i2c_master_dev_handle_t dev_handle = NULL;
+    struct nt3h2111_dev_t *dev = calloc(1, sizeof(struct nt3h2111_dev_t));
+    if (!dev) {
+        ESP_LOGE(TAG, "Failed to allocate NT3H2111 device");
+        return NULL;
+    }
 
     // Add device to the I2C bus
-    ret = i2c_master_bus_add_device(bus_handle, &dev_cfg, &dev_handle);
+    ret = i2c_master_bus_add_device(bus_handle, &dev_cfg, &dev->i2c_dev);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to add NT3H2111 device to I2C bus: %s", esp_err_to_name(ret));
+        free(dev);
         return NULL;
     }
 
     ESP_LOGI(TAG, "NT3H2111 device created successfully");
-    return dev_handle;
+    return dev;
 }
+
+#if __has_include("i2c_bus.h")
+nt3h2111_handle_t nt3h2111_device_create_i2cbus(i2c_bus_device_handle_t bus_dev)
+{
+    if (!bus_dev) {
+        ESP_LOGE(TAG, "Invalid i2c_bus device handle");
+        return NULL;
+    }
+
+    struct nt3h2111_dev_t *dev = calloc(1, sizeof(struct nt3h2111_dev_t));
+    if (!dev) {
+        ESP_LOGE(TAG, "Failed to allocate NT3H2111 device");
+        return NULL;
+    }
+
+    dev->bus_dev = bus_dev;
+    dev->use_bus = true;
+
+    ESP_LOGI(TAG, "NT3H2111 device created using i2c_bus");
+    return dev;
+}
+#endif
 
 esp_err_t nt3h2111_device_delete(nt3h2111_handle_t dev_handle)
 {
-    return i2c_master_bus_rm_device(dev_handle);
+    if (!dev_handle) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    esp_err_t ret = ESP_OK;
+#if __has_include("i2c_bus.h")
+    if (dev_handle->use_bus) {
+        ret = i2c_bus_device_delete(&dev_handle->bus_dev);
+        free(dev_handle);
+        return ret;
+    }
+#endif
+    ret = i2c_master_bus_rm_device(dev_handle->i2c_dev);
+    free(dev_handle);
+    return ret;
 }
 
 esp_err_t nt3h2111_read_block(nt3h2111_handle_t dev_handle, uint8_t block_addr, uint8_t *data)
@@ -54,12 +104,21 @@ esp_err_t nt3h2111_read_block(nt3h2111_handle_t dev_handle, uint8_t block_addr, 
 
     esp_err_t ret;
 
+#if __has_include("i2c_bus.h")
+    if (dev_handle->use_bus) {
+        // i2c_bus: mem_address maps directly to NT3H2111 block address
+        ret = i2c_bus_read_bytes(dev_handle->bus_dev, block_addr, NT3H2111_BLOCK_SIZE, data);
+        ESP_RETURN_ON_ERROR(ret, TAG, "Failed to read block via i2c_bus");
+        return ESP_OK;
+    }
+#endif
+
     // Write block address
-    ret = i2c_master_transmit(dev_handle, &block_addr, 1, -1);
+    ret = i2c_master_transmit(dev_handle->i2c_dev, &block_addr, 1, -1);
     ESP_RETURN_ON_ERROR(ret, TAG, "Failed to write block address");
 
     // Read 16 bytes from the block
-    ret = i2c_master_receive(dev_handle, data, NT3H2111_BLOCK_SIZE, -1);
+    ret = i2c_master_receive(dev_handle->i2c_dev, data, NT3H2111_BLOCK_SIZE, -1);
     ESP_RETURN_ON_ERROR(ret, TAG, "Failed to read block data");
 
     return ESP_OK;
@@ -70,6 +129,16 @@ esp_err_t nt3h2111_write_block(nt3h2111_handle_t dev_handle, uint8_t block_addr,
     ESP_RETURN_ON_FALSE(data, ESP_ERR_INVALID_ARG, TAG, "Invalid pointer: data cannot be NULL");
 
     esp_err_t ret;
+
+#if __has_include("i2c_bus.h")
+    if (dev_handle->use_bus) {
+        // i2c_bus: mem_address maps directly to NT3H2111 block address
+        ret = i2c_bus_write_bytes(dev_handle->bus_dev, block_addr, NT3H2111_BLOCK_SIZE, (uint8_t *)data);
+        ESP_RETURN_ON_ERROR(ret, TAG, "Failed to write block via i2c_bus");
+        return ESP_OK;
+    }
+#endif
+
     uint8_t write_buf[17];  // 1 byte address + 16 bytes data
 
     // Prepare write buffer: address + data
@@ -77,7 +146,7 @@ esp_err_t nt3h2111_write_block(nt3h2111_handle_t dev_handle, uint8_t block_addr,
     memcpy(&write_buf[1], data, NT3H2111_BLOCK_SIZE);
 
     // Write block address + data
-    ret = i2c_master_transmit(dev_handle, write_buf, sizeof(write_buf), -1);
+    ret = i2c_master_transmit(dev_handle->i2c_dev, write_buf, sizeof(write_buf), -1);
     ESP_RETURN_ON_ERROR(ret, TAG, "Failed to write block");
 
     return ESP_OK;

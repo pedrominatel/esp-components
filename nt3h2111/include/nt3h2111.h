@@ -18,6 +18,10 @@ extern "C" {
 #include "driver/i2c_master.h"
 #include "driver/gpio.h"
 
+#if __has_include("i2c_bus.h")
+#include "i2c_bus.h"
+#endif
+
 // NT3H2111 I2C address
 #define NT3H2111_I2C_ADDR           ((uint8_t)0x55)  // 7-bit I2C address
 
@@ -45,9 +49,9 @@ typedef void (*nt3h2111_fd_callback_t)(void *arg);
 #define NT3H2111_NC_REG_TRANSFER_DIR         (1 << 6)  // Transfer direction
 
 /**
- * @brief NT3H2111 device handle
+ * @brief NT3H2111 device handle (opaque pointer)
  */
-typedef i2c_master_dev_handle_t nt3h2111_handle_t;
+typedef struct nt3h2111_dev_t *nt3h2111_handle_t;
 
 /**
  * @brief Creates a handle for the NT3H2111 device on the specified I2C bus.
@@ -75,6 +79,19 @@ nt3h2111_handle_t nt3h2111_device_create(i2c_master_bus_handle_t bus_handle, con
  *     - ESP_FAIL: Failed to delete the device
  */
 esp_err_t nt3h2111_device_delete(nt3h2111_handle_t dev_handle);
+
+#if __has_include("i2c_bus.h")
+/**
+ * @brief Creates an NT3H2111 handle from an existing i2c_bus device handle.
+ *
+ * Use this function when the rest of your application already uses the
+ * espressif/i2c_bus component to manage the I2C bus.
+ *
+ * @param bus_dev Handle to the i2c_bus device (already created by the caller).
+ * @return nt3h2111_handle_t on success, NULL on failure.
+ */
+nt3h2111_handle_t nt3h2111_device_create_i2cbus(i2c_bus_device_handle_t bus_dev);
+#endif
 
 /**
  * @brief Read a 16-byte block from NT3H2111 memory.

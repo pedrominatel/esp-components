@@ -1,0 +1,17 @@
+version: 0.1.0
+description: ST25DV NFC/I2C EEPROM driver for ESP-IDF
+url: https://github.com/pedrominatel/esp-components/tree/main/st25dv
+repository: https://github.com/pedrominatel/esp-components.git
+issues: https://github.com/pedrominatel/esp-components/issues
+maintainers:
+  - "Pedro Minatel <pminatel@gmail.com>"
+tags:
+  - st25dv
+  - nfc
+  - i2c
+  - eeprom
+  - ndef
+  - iso15693
+  - driver
+dependencies:
+  idf: ">=5.3"
