@@ -28,6 +28,7 @@ Each component is written in C for the ESP-IDF build system and follows a consis
 | **Grove LCD RGB** | Seeed Studio | I²C | 16x2 LCD, RGB backlight, 16.8M colors, Custom chars | Display text, status, sensor readings |
 | **TMC2208** | Trinamic | UART/SPI | Stepper driver, 256µsteps, Stealthchop, Standalone | 3D printers, CNC, robotics |
 | **SGP30** | Sensirion | I²C | TVOC (ppb) + eCO2 (ppm), Baseline persistence, CRC-8 | Air quality monitoring, IAQ, ventilation |
+| **TV-B-Gone** | Open Source | IR (RMT TX) | IR power-off sweep, NA/EU codes, Xiaomi code, one-shot or continuous mode | TV power control, universal remote, presentations |
 
 ---
 
@@ -239,6 +240,23 @@ NFC & RFID
   - Standalone operation without microcontroller  
 - **API:** Motor control, speed adjustment, direction, microstepping  
 - **Use cases:** 3D printers, CNC machines, robotics, stepper motor applications
+
+---
+
+### IR / Remote Control
+
+#### TV-B-Gone – IR TV Power-Off Component
+- **Interface:** IR (ESP-IDF RMT TX)  
+- **Manufacturer:** Open Source (based on BruceDevices / Mitch Altman TV-B-Gone)  
+- **Features:**  
+  - Transmits IR power-off code sets for NA and EU regions  
+  - Xiaomi raw power code transmitted by default before regional sweeps  
+  - One-shot sweep mode (`tvbgone_ir_send_once`)  
+  - Continuous background sweep mode (`tvbgone_ir_start` / `tvbgone_ir_stop`)  
+  - Selectable region: `TVBGONE_IR_MODE_NA`, `TVBGONE_IR_MODE_EU`, or `TVBGONE_IR_MODE_BOTH`  
+  - Kconfig support for IR TX GPIO (`CONFIG_TVBGONE_IR_TX_GPIO`)  
+- **API:** `tvbgone_ir_init`, `tvbgone_ir_deinit`, `tvbgone_ir_set_mode`, `tvbgone_ir_send_once`, `tvbgone_ir_start`, `tvbgone_ir_stop`, `tvbgone_ir_is_running`  
+- **Use cases:** TV power control, universal remote, conference room automation, presentations
 
 ---
 
