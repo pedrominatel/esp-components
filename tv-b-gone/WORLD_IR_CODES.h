@@ -14,6 +14,8 @@ TV-B-Gone Firmware version 1.2
 
 */
 
+#include <stddef.h>
+
 // Makes the codes more readable. the OCRA is actually
 // programmed in terms of 'periods' not 'freqs' - that
 // is, the inverse!
@@ -31,6 +33,12 @@ struct IrCode {
     uint8_t const *codes;
 };
 
+struct IrRawCode {
+    uint32_t frequency_hz;
+    size_t pulse_count;
+    uint16_t const *pulses_us;
+};
+
 // Xiaomi TV "power" pattern from Mi Remote database (brand Xiaomi_153).
 const uint16_t TVBGONE_IR_XIAOMI_POWER_RAW_US[] = {
     1002, 584, 584, 579, 583, 1429, 583, 1429, 584, 580, 584, 1429, 584, 579, 583, 1429, 584, 580, 583, 1429, 584, 1430, 584, 10714,
@@ -38,6 +46,12 @@ const uint16_t TVBGONE_IR_XIAOMI_POWER_RAW_US[] = {
     1003, 585, 584, 579, 584, 1428, 584, 1429, 584, 580, 584, 1429, 584, 579, 584, 1429, 583, 580, 583, 1429, 583, 1430, 584, 10713,
     1002, 585, 584, 579, 583, 1429, 583, 1429, 584, 580, 583, 1429, 584, 579, 584, 1429, 584, 580, 584, 1429, 584, 1430, 584, 10713,
     1003, 585, 583, 579, 584, 1429, 583, 1429, 583, 580, 584, 1429, 584, 580, 583, 1429, 584, 580, 584, 1429, 584, 1430, 584, 12641,
+};
+
+const struct IrRawCode TVBGONE_IR_XIAOMI_POWER_CODE = {
+    38000,
+    sizeof(TVBGONE_IR_XIAOMI_POWER_RAW_US) / sizeof(TVBGONE_IR_XIAOMI_POWER_RAW_US[0]),
+    TVBGONE_IR_XIAOMI_POWER_RAW_US,
 };
 
 const uint16_t code_na000Times[] = {

@@ -250,7 +250,7 @@ NFC & RFID
 - **Manufacturer:** Open Source (based on BruceDevices / Mitch Altman TV-B-Gone)  
 - **Features:**  
   - Transmits IR power-off code sets for NA and EU regions  
-  - Xiaomi raw power code transmitted by default before regional sweeps  
+  - Xiaomi power code integrated into the common sweep path and transmitted by default in every sweep  
   - One-shot sweep mode (`tvbgone_ir_send_once`)  
   - Continuous background sweep mode (`tvbgone_ir_start` / `tvbgone_ir_stop`)  
   - Selectable region: `TVBGONE_IR_MODE_NA`, `TVBGONE_IR_MODE_EU`, or `TVBGONE_IR_MODE_BOTH`  
