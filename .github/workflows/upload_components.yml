@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@master
 
       - name: Upload components to component service
-        uses: espressif/upload-components-ci-action@v1
+        uses: espressif/upload-components-ci-action@v2
         with:
           directories: >
             t9602;mc3479;shtc3;sht4x;tmc2208;hp203b;lis3dh;lc709203;max17043;grove_lcd;nt3h2111;tv-b-gone;sgp30;st25dv;
