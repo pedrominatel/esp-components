@@ -1,18 +1,31 @@
-# IR TV Power-Off Component (TV-B-Gone Style)
+# TV-B-Gone for ESP-IDF
 
 [![Component Registry](https://components.espressif.com/components/pedrominatel/tv-b-gone/badge.svg)](https://components.espressif.com/components/pedrominatel/tv-b-gone)
 
-This component transmits IR power-off code sets (NA and EU) using ESP-IDF RMT TX. The Xiaomi raw power code is transmitted by default before regional code sets, and it supports one-shot or continuous sweep mode.
+The Power to Turn TVs OFF, on ESP32.
 
-This implementation is based on the BruceDevices firmware project (https://github.com/BruceDevices/firmware), which includes code from the original TV-B-Gone project by Mitch Altman.
+This component brings the TV-B-Gone concept to ESP-IDF using the RMT TX peripheral. It sends integrated TV power codes, including NA and EU sets plus the Xiaomi power code, so an ESP32 device can perform a full TV-B-Gone style sweep in one-shot or continuous mode.
+
+The original TV-B-Gone project and product line were created by Mitch Altman. For the official project, history, and hardware products, see the TV-B-Gone website: [tvbgone.com](https://www.tvbgone.com/).
+
+This implementation is based on the BruceDevices firmware project (https://github.com/BruceDevices/firmware), which includes code from the original TV-B-Gone project.
 
 ## Features
 
-- Send one full sweep of IR power-off codes
-- Start/stop continuous sweeping in a background task
-- Select region mode: `TVBGONE_IR_MODE_NA`, `TVBGONE_IR_MODE_EU`, or `TVBGONE_IR_MODE_BOTH`
-- Xiaomi power code is sent by default before region sweeps
-- Kconfig support for IR TX GPIO (`CONFIG_TVBGONE_IR_TX_GPIO`)
+- Send a full TV-B-Gone style IR sweep from an ESP32
+- Run a single sweep with `tvbgone_ir_send_once()`
+- Run continuous background sweeps with `tvbgone_ir_start()` / `tvbgone_ir_stop()`
+- Select regional code coverage with `TVBGONE_IR_MODE_NA`, `TVBGONE_IR_MODE_EU`, or `TVBGONE_IR_MODE_BOTH`
+- Include the Xiaomi power code in the same integrated transmit pipeline as the other codes
+- Configure the IR TX pin with `CONFIG_TVBGONE_IR_TX_GPIO`
+
+## What It Does
+
+This component transmits bursts of infrared power codes that match many television models, similar to the original TV-B-Gone device. In practice, that means:
+
+- one sweep sends the integrated Xiaomi code first, then the selected regional code sets
+- continuous mode repeats the sweep with a configurable gap
+- all transmission is handled by ESP-IDF RMT, so timing stays in the driver instead of bit-banging in software
 
 ## How to use
 
@@ -59,8 +72,9 @@ See:
 
 - `tv-b-gone/examples/tvbgone_ir_send_once`
 
-This example uses a button on GPIO9 (active LOW) to toggle `tvbgone_ir_start()` and `tvbgone_ir_stop()`.
+This example uses a button on GPIO9 (active LOW) to toggle `tvbgone_ir_start()` and `tvbgone_ir_stop()`, giving you a simple TV-B-Gone style trigger on hardware.
 
 ## Resources
 
+- [Official TV-B-Gone Website](https://www.tvbgone.com/)
 - [ESP-IDF RMT Peripheral](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/rmt.html)

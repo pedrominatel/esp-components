@@ -16,9 +16,21 @@ typedef struct IrCode IrCode;
 
 #define IR_TX_WAIT_TIMEOUT_MIN_MS 1500
 #define IR_TX_WAIT_TIMEOUT_MAX_MS 8000
-#define XIAOMI_POWER_FREQ_HZ      38000
 
 #define NUM_ELEM(x) (sizeof(x) / sizeof((x)[0]))
+
+typedef enum {
+    SWEEP_CODE_COMPRESSED = 0,
+    SWEEP_CODE_RAW,
+} sweep_code_type_t;
+
+typedef struct {
+    sweep_code_type_t type;
+    union {
+        const struct IrCode *compressed;
+        const struct IrRawCode *raw;
+    } data;
+} sweep_code_entry_t;
 
 typedef struct {
     SemaphoreHandle_t lock;
@@ -94,6 +106,30 @@ static uint32_t build_rmt_symbols_from_code(const struct IrCode *code, rmt_symbo
     return total_ticks;
 }
 
+static uint32_t build_rmt_symbols_from_raw(const struct IrRawCode *code, rmt_symbol_word_t *symbols)
+{
+    const size_t symbol_count = code->pulse_count / 2;
+    uint32_t total_ticks = 0;
+
+    for (size_t i = 0; i < symbol_count; i++) {
+        uint32_t d0 = (code->pulses_us[i * 2] + 5) / 10;
+        uint32_t d1 = (code->pulses_us[(i * 2) + 1] + 5) / 10;
+        if (d0 == 0) {
+            d0 = 1;
+        }
+        if (d1 == 0) {
+            d1 = 1;
+        }
+        symbols[i].level0 = 1;
+        symbols[i].duration0 = d0;
+        symbols[i].level1 = 0;
+        symbols[i].duration1 = d1;
+        total_ticks += d0 + d1;
+    }
+
+    return total_ticks;
+}
+
 static void recover_channel_if_needed(void)
 {
     esp_err_t dis_err = rmt_disable(s_ctx.tx_channel);
@@ -116,7 +152,7 @@ static esp_err_t wait_tx_done(uint32_t total_ticks, const char *log_prefix)
         wait_timeout_ms = IR_TX_WAIT_TIMEOUT_MAX_MS;
     }
 
-    esp_err_t err = rmt_tx_wait_all_done(s_ctx.tx_channel, pdMS_TO_TICKS(wait_timeout_ms));
+    esp_err_t err = rmt_tx_wait_all_done(s_ctx.tx_channel, wait_timeout_ms);
     if (err == ESP_ERR_TIMEOUT) {
         ESP_LOGW(TAG, "%s timeout (expected=%u ms, waited=%u ms)",
                  log_prefix, (unsigned)expected_ms, (unsigned)wait_timeout_ms);
@@ -147,10 +183,13 @@ static esp_err_t transmit_ir_code(const struct IrCode *code, size_t index, size_
 
     esp_err_t err = rmt_transmit(s_ctx.tx_channel, s_ctx.copy_encoder, symbols,
                                  sizeof(rmt_symbol_word_t) * code->numpairs, &tx_cfg);
-    free(symbols);
-    ESP_RETURN_ON_ERROR(err, TAG, "transmit failed");
+    if (err != ESP_OK) {
+        free(symbols);
+        ESP_RETURN_ON_ERROR(err, TAG, "transmit failed");
+    }
 
     err = wait_tx_done(total_ticks, "TV-B-Gone code TX wait");
+    free(symbols);
     if (err == ESP_ERR_TIMEOUT) {
         ESP_LOGW(TAG, "timeout on code %u/%u (freq=%u kHz)",
                  (unsigned)(index + 1), (unsigned)total, (unsigned)code->timer_val);
@@ -159,34 +198,18 @@ static esp_err_t transmit_ir_code(const struct IrCode *code, size_t index, size_
     return err;
 }
 
-static esp_err_t send_xiaomi_power_code(void)
+static esp_err_t transmit_raw_ir_code(const struct IrRawCode *code, size_t index, size_t total)
 {
-    const size_t pulse_count = NUM_ELEM(TVBGONE_IR_XIAOMI_POWER_RAW_US);
-    const size_t symbol_count = pulse_count / 2;
+    const size_t symbol_count = code->pulse_count / 2;
     rmt_symbol_word_t *symbols = calloc(symbol_count, sizeof(rmt_symbol_word_t));
     if (!symbols) {
         return ESP_ERR_NO_MEM;
     }
 
-    uint32_t total_ticks = 0;
-    for (size_t i = 0; i < symbol_count; i++) {
-        uint32_t d0 = (TVBGONE_IR_XIAOMI_POWER_RAW_US[i * 2] + 5) / 10;
-        uint32_t d1 = (TVBGONE_IR_XIAOMI_POWER_RAW_US[(i * 2) + 1] + 5) / 10;
-        if (d0 == 0) {
-            d0 = 1;
-        }
-        if (d1 == 0) {
-            d1 = 1;
-        }
-        symbols[i].level0 = 1;
-        symbols[i].duration0 = d0;
-        symbols[i].level1 = 0;
-        symbols[i].duration1 = d1;
-        total_ticks += d0 + d1;
-    }
+    uint32_t total_ticks = build_rmt_symbols_from_raw(code, symbols);
 
     rmt_carrier_config_t carrier_cfg = {
-        .frequency_hz = XIAOMI_POWER_FREQ_HZ,
+        .frequency_hz = code->frequency_hz,
         .duty_cycle = 0.33,
     };
 
@@ -202,30 +225,74 @@ static esp_err_t send_xiaomi_power_code(void)
 
     err = rmt_transmit(s_ctx.tx_channel, s_ctx.copy_encoder, symbols,
                        symbol_count * sizeof(rmt_symbol_word_t), &tx_cfg);
-    free(symbols);
-    ESP_RETURN_ON_ERROR(err, TAG, "Xiaomi transmit failed");
+    if (err != ESP_OK) {
+        free(symbols);
+        ESP_RETURN_ON_ERROR(err, TAG, "raw transmit failed");
+    }
 
-    err = wait_tx_done(total_ticks, "Xiaomi power TX wait");
-    return (err == ESP_ERR_TIMEOUT) ? ESP_OK : err;
+    err = wait_tx_done(total_ticks, "raw code TX wait");
+    free(symbols);
+    if (err == ESP_ERR_TIMEOUT) {
+        ESP_LOGW(TAG, "timeout on code %u/%u (freq=%u Hz)",
+                 (unsigned)(index + 1), (unsigned)total, (unsigned)code->frequency_hz);
+        return ESP_OK;
+    }
+    return err;
 }
 
-static esp_err_t send_region_codes(const struct IrCode *const *codes, size_t num_codes, const char *region_name)
+static esp_err_t transmit_sweep_entry(const sweep_code_entry_t *entry, size_t index, size_t total)
 {
-    ESP_LOGI(TAG, "Sending %s region set (%u codes)", region_name, (unsigned)num_codes);
+    if (entry->type == SWEEP_CODE_RAW) {
+        return transmit_raw_ir_code(entry->data.raw, index, total);
+    }
+    return transmit_ir_code(entry->data.compressed, index, total);
+}
+
+static esp_err_t send_code_entries(const sweep_code_entry_t *codes, size_t num_codes, const char *group_name)
+{
+    ESP_LOGI(TAG, "Sending %s set (%u codes)", group_name, (unsigned)num_codes);
 
     for (size_t i = 0; i < num_codes; i++) {
         if (should_stop()) {
             return ESP_OK;
         }
-        if (!codes[i]) {
+        if ((codes[i].type == SWEEP_CODE_COMPRESSED && codes[i].data.compressed == NULL) ||
+            (codes[i].type == SWEEP_CODE_RAW && codes[i].data.raw == NULL)) {
             continue;
         }
         if ((i % 10) == 0) {
-            ESP_LOGI(TAG, "%s progress: %u/%u", region_name, (unsigned)(i + 1), (unsigned)num_codes);
+            ESP_LOGI(TAG, "%s progress: %u/%u", group_name, (unsigned)(i + 1), (unsigned)num_codes);
         }
 
-        esp_err_t err = transmit_ir_code(codes[i], i, num_codes);
-        ESP_RETURN_ON_ERROR(err, TAG, "region transmit failed");
+        esp_err_t err = transmit_sweep_entry(&codes[i], i, num_codes);
+        ESP_RETURN_ON_ERROR(err, TAG, "group transmit failed");
+        vTaskDelay(pdMS_TO_TICKS(s_ctx.config.code_gap_ms));
+    }
+
+    return ESP_OK;
+}
+
+static esp_err_t send_compressed_codes(const struct IrCode *const *codes, size_t num_codes, const char *group_name)
+{
+    ESP_LOGI(TAG, "Sending %s set (%u codes)", group_name, (unsigned)num_codes);
+
+    for (size_t i = 0; i < num_codes; i++) {
+        if (should_stop()) {
+            return ESP_OK;
+        }
+        if (codes[i] == NULL) {
+            continue;
+        }
+        if ((i % 10) == 0) {
+            ESP_LOGI(TAG, "%s progress: %u/%u", group_name, (unsigned)(i + 1), (unsigned)num_codes);
+        }
+
+        sweep_code_entry_t entry = {
+            .type = SWEEP_CODE_COMPRESSED,
+            .data.compressed = codes[i],
+        };
+        esp_err_t err = transmit_sweep_entry(&entry, i, num_codes);
+        ESP_RETURN_ON_ERROR(err, TAG, "group transmit failed");
         vTaskDelay(pdMS_TO_TICKS(s_ctx.config.code_gap_ms));
     }
 
@@ -261,17 +328,22 @@ static esp_err_t send_one_sweep(void)
 {
     const size_t num_na_codes = NUM_ELEM(NApowerCodes);
     const size_t num_eu_codes = NUM_ELEM(EUpowerCodes);
+    const sweep_code_entry_t always_on_codes[] = {
+        {
+            .type = SWEEP_CODE_RAW,
+            .data.raw = &TVBGONE_IR_XIAOMI_POWER_CODE,
+        },
+    };
 
     tvbgone_ir_mode_t mode = s_ctx.mode;
 
-    ESP_RETURN_ON_ERROR(send_xiaomi_power_code(), TAG, "Xiaomi send failed");
-    vTaskDelay(pdMS_TO_TICKS(s_ctx.config.code_gap_ms));
+    ESP_RETURN_ON_ERROR(send_code_entries(always_on_codes, NUM_ELEM(always_on_codes), "integrated"), TAG, "integrated send failed");
 
     if (mode == TVBGONE_IR_MODE_NA || mode == TVBGONE_IR_MODE_BOTH) {
-        ESP_RETURN_ON_ERROR(send_region_codes(NApowerCodes, num_na_codes, "NA"), TAG, "NA send failed");
+        ESP_RETURN_ON_ERROR(send_compressed_codes(NApowerCodes, num_na_codes, "NA"), TAG, "NA send failed");
     }
     if (mode == TVBGONE_IR_MODE_EU || mode == TVBGONE_IR_MODE_BOTH) {
-        ESP_RETURN_ON_ERROR(send_region_codes(EUpowerCodes, num_eu_codes, "EU"), TAG, "EU send failed");
+        ESP_RETURN_ON_ERROR(send_compressed_codes(EUpowerCodes, num_eu_codes, "EU"), TAG, "EU send failed");
     }
 
     return ESP_OK;
