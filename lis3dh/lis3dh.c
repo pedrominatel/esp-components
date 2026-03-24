@@ -1,6 +1,7 @@
 #include <string.h>
 #include "lis3dh.h"
 #include "esp_log.h"
+#include "lis3dh_config.h"
 
 static const char *TAG = "LIS3DH";
 
@@ -31,7 +32,7 @@ esp_err_t lis3dh_init(const lis3dh_config_t *config, lis3dh_handle_t *out_handle
     i2c_device_config_t dev_cfg = {
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,
         .device_address = config->i2c_addr,
-        .scl_speed_hz = 400000,
+        .scl_speed_hz = LIS3DH_I2C_CLK_SPEED,
     };
 
     esp_err_t ret = i2c_master_bus_add_device(config->i2c_bus, &dev_cfg, &dev->i2c_dev);
