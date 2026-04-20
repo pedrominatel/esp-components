@@ -28,7 +28,7 @@ Each component is written in C for the ESP-IDF build system and follows a consis
 | **Grove LCD RGB** | Seeed Studio | I²C | 16x2 LCD, RGB backlight, 16.8M colors, Custom chars | Display text, status, sensor readings |
 | **TMC2208** | Trinamic | UART/SPI | Stepper driver, 256µsteps, Stealthchop, Standalone | 3D printers, CNC, robotics |
 | **SGP30** | Sensirion | I²C | TVOC (ppb) + eCO2 (ppm), Baseline persistence, CRC-8 | Air quality monitoring, IAQ, ventilation |
-| **TV-B-Gone** | Open Source | IR (RMT TX) | IR power-off sweep, NA/EU codes, Xiaomi code, one-shot or continuous mode | TV power control, universal remote, presentations |
+| **TV-B-Gone** | Mitch Altman | IR (RMT TX) | IR power-off sweep, NA/EU codes, Xiaomi code, one-shot or continuous mode | TV power control, universal remote, presentations |
 
 ---
 
@@ -247,15 +247,14 @@ NFC & RFID
 
 #### TV-B-Gone – IR TV Power-Off Component
 - **Interface:** IR (ESP-IDF RMT TX)  
-- **Manufacturer:** Open Source (based on BruceDevices / Mitch Altman TV-B-Gone)  
+- **Manufacturer:** Mitch Altman (based on [TV-B-Gone-kit_V2](https://github.com/maltman23/TV-B-Gone-kit_V2))  
 - **Features:**  
-  - Transmits IR power-off code sets for NA and EU regions  
-  - Xiaomi power code integrated into the common sweep path and transmitted by default in every sweep  
-  - One-shot sweep mode (`tvbgone_ir_send_once`)  
-  - Continuous background sweep mode (`tvbgone_ir_start` / `tvbgone_ir_stop`)  
-  - Selectable region: `TVBGONE_IR_MODE_NA`, `TVBGONE_IR_MODE_EU`, or `TVBGONE_IR_MODE_BOTH`  
-  - Kconfig support for IR TX GPIO (`CONFIG_TVBGONE_IR_TX_GPIO`)  
-- **API:** `tvbgone_ir_init`, `tvbgone_ir_deinit`, `tvbgone_ir_set_mode`, `tvbgone_ir_send_once`, `tvbgone_ir_start`, `tvbgone_ir_stop`, `tvbgone_ir_is_running`  
+  - Transmits IR power-off code sets for NA and EU regions
+  - IR-only core API with selectable NA, EU, or BOTH region sends
+  - Supports single-shot and continuous transmission modes with cooperative stop
+  - Board-specific button and status LED behavior implemented in example apps
+  - RMT-based IR transmission using the bundled `WORLDcodes.cpp` database shared with the Arduino implementation
+- **API:** `tvbgone_core_get_default_config`, `tvbgone_core_init`, `tvbgone_core_send`, `tvbgone_core_stop`  
 - **Use cases:** TV power control, universal remote, conference room automation, presentations
 
 ---
