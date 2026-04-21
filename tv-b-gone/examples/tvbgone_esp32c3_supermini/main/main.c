@@ -148,6 +148,7 @@ void app_main(void)
 
     tvbgone_core_get_default_config(&config);
     config.ir_led_gpio = TVBGONE_IR_LED_GPIO;
+    config.rmt_channel_mode = TVBGONE_CORE_RMT_CHANNEL_MODE_INTERNAL;
     ESP_ERROR_CHECK(tvbgone_core_init(&config));
 
     BaseType_t button_task_created = xTaskCreate(button_task, "tvbg_btn", 3072, NULL, 5, NULL);

@@ -18,6 +18,8 @@ This project is based on the [TV-B-Gone-kit_V2](https://github.com/maltman23/TV-
 - Press the EU button to transmit the Europe database.
 - Press either button during an active transmission to stop and restart from
   the first code of the newly selected region.
+- This example uses the default internal RMT-channel mode, where
+  `tvbgone_core` creates and owns the TX channel.
 - The example owns button polling and visible LED signaling; the core only
   drives the IR LED.
 
