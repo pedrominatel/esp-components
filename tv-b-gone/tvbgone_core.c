@@ -31,6 +31,7 @@ static const char *TAG = "tvbgone_core";
 #define RMT_MEM_BLOCK_SYMBOLS 128
 #define RMT_MAX_DURATION_TICKS 32767U
 #define RMT_MAX_SYMBOLS 1280U
+
 typedef struct {
     tvbgone_core_config_t config;
     rmt_channel_handle_t ir_rmt_channel;
@@ -42,6 +43,8 @@ typedef struct {
     volatile bool stop_requested;
     tvbgone_core_region_t active_region;
     tvbgone_core_send_mode_t active_mode;
+    uint16_t current_code_number;
+    uint16_t total_codes;
 } tvbgone_core_ctx_t;
 
 static tvbgone_core_ctx_t s_ctx = {
@@ -49,6 +52,8 @@ static tvbgone_core_ctx_t s_ctx = {
         .ir_led_gpio = TVBGONE_CORE_DEFAULT_IRLED_GPIO,
         .task_stack_size = TVBGONE_CORE_DEFAULT_TASK_STACK_SIZE,
         .task_priority = TVBGONE_CORE_DEFAULT_TASK_PRIORITY,
+        .rmt_channel_mode = TVBGONE_CORE_RMT_CHANNEL_MODE_INTERNAL,
+        .external_rmt_channel = NULL,
     },
     .active_region = TVBGONE_CORE_REGION_NA,
     .active_mode = TVBGONE_CORE_SEND_MODE_SINGLE,
@@ -59,6 +64,27 @@ static portMUX_TYPE s_ctx_lock = portMUX_INITIALIZER_UNLOCKED;
 static inline bool tvbgone_stop_requested(void)
 {
     return s_ctx.stop_requested;
+}
+
+static inline bool tvbgone_owns_rmt_channel(void)
+{
+    return s_ctx.config.rmt_channel_mode == TVBGONE_CORE_RMT_CHANNEL_MODE_INTERNAL;
+}
+
+static uint16_t get_total_codes_for_region(tvbgone_core_region_t region)
+{
+    if (region == TVBGONE_CORE_REGION_BOTH) {
+        return (uint16_t)num_NAcodes + (uint16_t)num_EUcodes;
+    }
+
+    return (region == TVBGONE_CORE_REGION_NA) ? (uint16_t)num_NAcodes : (uint16_t)num_EUcodes;
+}
+
+static void set_current_code_number(uint16_t code_number)
+{
+    taskENTER_CRITICAL(&s_ctx_lock);
+    s_ctx.current_code_number = code_number;
+    taskEXIT_CRITICAL(&s_ctx_lock);
 }
 
 static esp_err_t begin_send(tvbgone_core_region_t region, tvbgone_core_send_mode_t mode)
@@ -75,6 +101,8 @@ static esp_err_t begin_send(tvbgone_core_region_t region, tvbgone_core_send_mode
         s_ctx.stop_requested = false;
         s_ctx.active_region = region;
         s_ctx.active_mode = mode;
+        s_ctx.current_code_number = 0;
+        s_ctx.total_codes = get_total_codes_for_region(region);
     }
     taskEXIT_CRITICAL(&s_ctx_lock);
 
@@ -86,6 +114,7 @@ static void finish_send(void)
     taskENTER_CRITICAL(&s_ctx_lock);
     s_ctx.sending = false;
     s_ctx.stop_requested = false;
+    s_ctx.current_code_number = 0;
     s_ctx.task_handle = NULL;
     taskEXIT_CRITICAL(&s_ctx_lock);
 }
@@ -163,6 +192,10 @@ static size_t build_power_code_symbols(rmt_symbol_word_t *symbols, size_t max_sy
 
 static void recover_rmt_channel(void)
 {
+    if (s_ctx.ir_rmt_channel == NULL) {
+        return;
+    }
+
     esp_err_t err = rmt_disable(s_ctx.ir_rmt_channel);
     if ((err != ESP_OK) && (err != ESP_ERR_INVALID_STATE)) {
         ESP_LOGW(TAG, "rmt_disable recovery failed: %s", esp_err_to_name(err));
@@ -250,7 +283,7 @@ static esp_err_t xmit_code_interruptible(uint32_t carrier_freq, int num_pairs,
     return wait_tx_done_interruptible();
 }
 
-static esp_err_t send_region_once(tvbgone_core_region_t region)
+static esp_err_t send_region_once(tvbgone_core_region_t region, uint16_t base_code_number)
 {
     uint8_t num_codes = (region == TVBGONE_CORE_REGION_NA) ? num_NAcodes : num_EUcodes;
     struct IrCode **power_codes = (region == TVBGONE_CORE_REGION_NA) ? NApowerCodes : EUpowerCodes;
@@ -265,6 +298,7 @@ static esp_err_t send_region_once(tvbgone_core_region_t region)
         }
 
         pwr_code_ptr = power_codes[power_code_count];
+        set_current_code_number((uint16_t)(base_code_number + power_code_count + 1));
 
         ESP_LOGI(TAG, "Transmitting %s POWER-Code %d...", region_name, power_code_count);
         ESP_RETURN_ON_ERROR(xmit_code_interruptible(pwr_code_ptr->carrier_freq,
@@ -292,16 +326,16 @@ static esp_err_t send_selected_region(tvbgone_core_region_t region)
              : "BOTH");
 
     if (region == TVBGONE_CORE_REGION_BOTH) {
-        ESP_RETURN_ON_ERROR(send_region_once(TVBGONE_CORE_REGION_NA), TAG,
+        ESP_RETURN_ON_ERROR(send_region_once(TVBGONE_CORE_REGION_NA, 0), TAG,
                             "BOTH send interrupted during NA region");
         ESP_RETURN_ON_ERROR(delay_interruptible(TIME_BETWEEN_CODES_MS), TAG,
                             "BOTH send interrupted between regions");
-        ESP_RETURN_ON_ERROR(send_region_once(TVBGONE_CORE_REGION_EU), TAG,
+        ESP_RETURN_ON_ERROR(send_region_once(TVBGONE_CORE_REGION_EU, num_NAcodes), TAG,
                             "BOTH send interrupted during EU region");
         return ESP_OK;
     }
 
-    return send_region_once(region);
+    return send_region_once(region, 0);
 }
 
 static void tvbgone_continuous_task(void *pv_parameters)
@@ -339,13 +373,36 @@ static esp_err_t init_hardware(void)
         },
     };
     rmt_copy_encoder_config_t copy_encoder_cfg = {};
+    esp_err_t err;
+
+    if (s_ctx.config.rmt_channel_mode == TVBGONE_CORE_RMT_CHANNEL_MODE_BORROWED) {
+        s_ctx.ir_rmt_channel = s_ctx.config.external_rmt_channel;
+        ESP_RETURN_ON_ERROR(rmt_new_copy_encoder(&copy_encoder_cfg, &s_ctx.ir_copy_encoder), TAG,
+                            "failed to create RMT encoder");
+        ESP_LOGI(TAG, "Using externally initialized RMT TX channel");
+        return ESP_OK;
+    }
 
     ESP_RETURN_ON_ERROR(rmt_new_tx_channel(&tx_chan_cfg, &s_ctx.ir_rmt_channel), TAG,
                         "failed to create RMT TX channel");
-    ESP_RETURN_ON_ERROR(rmt_new_copy_encoder(&copy_encoder_cfg, &s_ctx.ir_copy_encoder), TAG,
-                        "failed to create RMT encoder");
-    ESP_RETURN_ON_ERROR(rmt_enable(s_ctx.ir_rmt_channel), TAG,
-                        "failed to enable RMT channel");
+
+    err = rmt_new_copy_encoder(&copy_encoder_cfg, &s_ctx.ir_copy_encoder);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "failed to create RMT encoder: %s", esp_err_to_name(err));
+        rmt_del_channel(s_ctx.ir_rmt_channel);
+        s_ctx.ir_rmt_channel = NULL;
+        return err;
+    }
+
+    err = rmt_enable(s_ctx.ir_rmt_channel);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "failed to enable RMT channel: %s", esp_err_to_name(err));
+        rmt_del_encoder(s_ctx.ir_copy_encoder);
+        rmt_del_channel(s_ctx.ir_rmt_channel);
+        s_ctx.ir_copy_encoder = NULL;
+        s_ctx.ir_rmt_channel = NULL;
+        return err;
+    }
 
     ESP_LOGI(TAG, "TV-B-Gone IR hardware configuration done");
     return ESP_OK;
@@ -357,7 +414,30 @@ void tvbgone_core_get_default_config(tvbgone_core_config_t *config)
         return;
     }
 
-    *config = s_ctx.config;
+    *config = (tvbgone_core_config_t) {
+        .ir_led_gpio = TVBGONE_CORE_DEFAULT_IRLED_GPIO,
+        .task_stack_size = TVBGONE_CORE_DEFAULT_TASK_STACK_SIZE,
+        .task_priority = TVBGONE_CORE_DEFAULT_TASK_PRIORITY,
+        .rmt_channel_mode = TVBGONE_CORE_RMT_CHANNEL_MODE_INTERNAL,
+        .external_rmt_channel = NULL,
+    };
+}
+
+esp_err_t tvbgone_core_get_status(tvbgone_core_status_t *status)
+{
+    ESP_RETURN_ON_FALSE(status != NULL, ESP_ERR_INVALID_ARG, TAG,
+                        "status must not be null");
+
+    taskENTER_CRITICAL(&s_ctx_lock);
+    status->run_state = s_ctx.stop_requested ? TVBGONE_CORE_RUN_STATE_STOPPING
+                        : s_ctx.sending   ? TVBGONE_CORE_RUN_STATE_RUNNING
+                                          : TVBGONE_CORE_RUN_STATE_IDLE;
+    status->region = s_ctx.active_region;
+    status->current_code_number = s_ctx.current_code_number;
+    status->total_codes = s_ctx.total_codes;
+    taskEXIT_CRITICAL(&s_ctx_lock);
+
+    return ESP_OK;
 }
 
 esp_err_t tvbgone_core_init(const tvbgone_core_config_t *config)
@@ -379,8 +459,16 @@ esp_err_t tvbgone_core_init(const tvbgone_core_config_t *config)
 
     ESP_RETURN_ON_FALSE(effective_config.task_stack_size > 0, ESP_ERR_INVALID_ARG, TAG,
                         "task stack size must be greater than zero");
-    ESP_RETURN_ON_FALSE(GPIO_IS_VALID_OUTPUT_GPIO(effective_config.ir_led_gpio),
-                        ESP_ERR_INVALID_ARG, TAG, "invalid IR LED GPIO");
+    ESP_RETURN_ON_FALSE(effective_config.rmt_channel_mode <= TVBGONE_CORE_RMT_CHANNEL_MODE_BORROWED,
+                        ESP_ERR_INVALID_ARG, TAG, "invalid RMT channel mode");
+
+    if (effective_config.rmt_channel_mode == TVBGONE_CORE_RMT_CHANNEL_MODE_INTERNAL) {
+        ESP_RETURN_ON_FALSE(GPIO_IS_VALID_OUTPUT_GPIO(effective_config.ir_led_gpio),
+                            ESP_ERR_INVALID_ARG, TAG, "invalid IR LED GPIO");
+    } else {
+        ESP_RETURN_ON_FALSE(effective_config.external_rmt_channel != NULL,
+                            ESP_ERR_INVALID_ARG, TAG, "external RMT channel must not be null");
+    }
 
     s_ctx.config = effective_config;
     ESP_RETURN_ON_ERROR(init_hardware(), TAG, "failed to initialize hardware");
@@ -457,21 +545,25 @@ esp_err_t tvbgone_core_deinit(void)
     }
 
     if (s_ctx.ir_rmt_channel != NULL) {
-        esp_err_t err = rmt_disable(s_ctx.ir_rmt_channel);
-        if ((err != ESP_OK) && (err != ESP_ERR_INVALID_STATE)) {
-            return err;
-        }
+        if (tvbgone_owns_rmt_channel()) {
+            esp_err_t err = rmt_disable(s_ctx.ir_rmt_channel);
+            if ((err != ESP_OK) && (err != ESP_ERR_INVALID_STATE)) {
+                return err;
+            }
 
-        ESP_RETURN_ON_ERROR(rmt_del_channel(s_ctx.ir_rmt_channel), TAG,
-                            "failed to delete RMT channel");
+            ESP_RETURN_ON_ERROR(rmt_del_channel(s_ctx.ir_rmt_channel), TAG,
+                                "failed to delete RMT channel");
+        }
         s_ctx.ir_rmt_channel = NULL;
     }
 
     taskENTER_CRITICAL(&s_ctx_lock);
+    tvbgone_core_get_default_config(&s_ctx.config);
     s_ctx.initialized = false;
     s_ctx.stop_requested = false;
-    s_ctx.active_region = TVBGONE_CORE_REGION_NA;
     s_ctx.active_mode = TVBGONE_CORE_SEND_MODE_SINGLE;
+    s_ctx.current_code_number = 0;
+    s_ctx.total_codes = 0;
     taskEXIT_CRITICAL(&s_ctx_lock);
 
     return ESP_OK;

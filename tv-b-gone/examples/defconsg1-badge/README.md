@@ -16,8 +16,10 @@ This project is based on the [TV-B-Gone-kit_V2](https://github.com/maltman23/TV-
   databases in sequence.
 - Press the button again during an active transmission to stop it.
 - Press the button again after a stopped or completed sweep to start a new one.
-- The example owns the button behavior; the core only controls the IR LED
-  output.
+- The example simulates a BSP by creating and enabling the RMT TX channel
+  itself, then passes that channel into `tvbgone_core`.
+- The example owns the button behavior and borrowed-channel setup; the core only
+  controls TV-B-Gone transmission.
 
 ## Build
 

@@ -1,4 +1,4 @@
-version: "0.2.0"
+version: "0.3.0"
 description: TV-B-Gone board runtime component for ESP-IDF using the RMT TX peripheral.
 url: https://github.com/pedrominatel/esp-components/tree/main/tv-b-gone
 repository: https://github.com/pedrominatel/esp-components.git
