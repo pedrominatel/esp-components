@@ -1,80 +1,59 @@
 # TV-B-Gone for ESP-IDF
 
-[![Component Registry](https://components.espressif.com/components/pedrominatel/tv-b-gone/badge.svg)](https://components.espressif.com/components/pedrominatel/tv-b-gone)
+`tv-b-gone` packages the current TV-B-Gone ESP-IDF firmware as a reusable component for ESP-IDF projects while keeping the public C API under `tvbgone_core`.
 
-The Power to Turn TVs OFF, on ESP32.
+This project is based on the [TV-B-Gone-kit_V2](https://github.com/maltman23/TV-B-Gone-kit_V2) by Mitch Altman.
 
-This component brings the TV-B-Gone concept to ESP-IDF using the RMT TX peripheral. It sends integrated TV power codes, including NA and EU sets plus the Xiaomi power code, so an ESP32 device can perform a full TV-B-Gone style sweep in one-shot or continuous mode.
+## What It Includes
 
-The original TV-B-Gone project and product line were created by Mitch Altman. For the official project, history, and hardware products, see the TV-B-Gone website: [tvbgone.com](https://www.tvbgone.com/).
+- The current TV-B-Gone IR transmit logic
+- The bundled `WORLDcodes.cpp` TV-B-Gone power-code database shared with the Arduino implementation
+- A root-level component layout consistent with the rest of this repository
 
-This implementation is based on the BruceDevices firmware project (https://github.com/BruceDevices/firmware), which includes code from the original TV-B-Gone project.
+## Core Responsibility
 
-## Features
+The core configures and drives only the IR output hardware. Button handling,
+visible LED signaling, and any board-specific UI behavior belong in the
+application or example code.
 
-- Send a full TV-B-Gone style IR sweep from an ESP32
-- Run a single sweep with `tvbgone_ir_send_once()`
-- Run continuous background sweeps with `tvbgone_ir_start()` / `tvbgone_ir_stop()`
-- Select regional code coverage with `TVBGONE_IR_MODE_NA`, `TVBGONE_IR_MODE_EU`, or `TVBGONE_IR_MODE_BOTH`
-- Include the Xiaomi power code in the same integrated transmit pipeline as the other codes
-- Configure the IR TX pin with `CONFIG_TVBGONE_IR_TX_GPIO`
-
-## What It Does
-
-This component transmits bursts of infrared power codes that match many television models, similar to the original TV-B-Gone device. In practice, that means:
-
-- one sweep sends the integrated Xiaomi code first, then the selected regional code sets
-- continuous mode repeats the sweep with a configurable gap
-- all transmission is handled by ESP-IDF RMT, so timing stays in the driver instead of bit-banging in software
-
-## How to use
-
-### Initialize the component
+## Public API
 
 ```c
-tvbgone_ir_config_t config = TVBGONE_IR_DEFAULT_CONFIG();
-config.code_gap_ms = 205;
-config.sweep_gap_ms = 5000;
+#include "tvbgone_core.h"
 
-ESP_ERROR_CHECK(tvbgone_ir_init(&config));
-ESP_ERROR_CHECK(tvbgone_ir_set_mode(TVBGONE_IR_MODE_BOTH));
+tvbgone_core_config_t config;
+tvbgone_core_get_default_config(&config);
+config.ir_led_gpio = GPIO_NUM_2;
+
+ESP_ERROR_CHECK(tvbgone_core_init(&config));
+ESP_ERROR_CHECK(tvbgone_core_send(TVBGONE_CORE_REGION_NA,
+                                  TVBGONE_CORE_SEND_MODE_SINGLE));
 ```
 
-### Send one sweep
+Available send options:
 
-```c
-ESP_ERROR_CHECK(tvbgone_ir_send_once());
-```
+- Regions: `TVBGONE_CORE_REGION_NA`, `TVBGONE_CORE_REGION_EU`, `TVBGONE_CORE_REGION_BOTH`
+- Modes: `TVBGONE_CORE_SEND_MODE_SINGLE`, `TVBGONE_CORE_SEND_MODE_CONTINUOUS`
 
-### Start/stop continuous mode
-
-```c
-ESP_ERROR_CHECK(tvbgone_ir_start());
-// ...
-ESP_ERROR_CHECK(tvbgone_ir_stop(pdMS_TO_TICKS(5000)));
-```
-
-### Deinitialize
-
-```c
-ESP_ERROR_CHECK(tvbgone_ir_deinit());
-```
-
-### Configure IR TX GPIO (Kconfig)
-
-In `idf.py menuconfig`:
-
-- `Component config -> TV-B-Gone IR Configuration -> IR TX GPIO pin`
+Use `tvbgone_core_stop()` to interrupt an in-flight single sweep or stop a
+continuous send loop. Use `tvbgone_core_deinit()` when you need to tear down the
+IR hardware before reconfiguration.
 
 ## Example
 
-See:
+The example in [`examples/tvbgone_esp32c3_supermini`](examples/tvbgone_esp32c3_supermini)
+is the reference application for this component. It keeps the board-facing
+behavior in example code:
 
-- `tv-b-gone/examples/tvbgone_ir_send_once`
+- press NA to transmit the North America database
+- press EU to transmit the Europe database
+- press either button during transmission to stop and restart from the beginning
+- drive the visible status LED outside the core API
 
-This example uses a button on GPIO9 (active LOW) to toggle `tvbgone_ir_start()` and `tvbgone_ir_stop()`, giving you a simple TV-B-Gone style trigger on hardware.
+## Build The Example
 
-## Resources
-
-- [Official TV-B-Gone Website](https://www.tvbgone.com/)
-- [ESP-IDF RMT Peripheral](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/rmt.html)
+```bash
+cd examples/tvbgone_esp32c3_supermini
+idf.py set-target esp32c3
+idf.py build
+```
