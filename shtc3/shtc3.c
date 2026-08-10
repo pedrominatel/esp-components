@@ -19,6 +19,7 @@ i2c_master_dev_handle_t shtc3_device_create(i2c_master_bus_handle_t bus_handle, 
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,
         .device_address = dev_addr,
         .scl_speed_hz = dev_speed,
+        .scl_wait_us = 20000,
     };
 
     i2c_master_dev_handle_t dev_handle = NULL;
