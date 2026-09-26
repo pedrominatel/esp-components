@@ -38,3 +38,28 @@ jobs:
       run: |
         . ${IDF_PATH}/export.sh
         idf-build-apps build --target ${{ matrix.idf_target }} --recursive --build-dir build_${{ matrix.idf_target }}
+
+  build-ultraled:
+    name: Build Ultraled with ESP-IDF 6.0 for ESP32-P4
+    runs-on: ubuntu-22.04
+    container: espressif/idf:release-v6.0
+    permissions:
+      contents: read
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+
+    - name: Build Ultraled example and test applications
+      shell: bash
+      run: |
+        . ${IDF_PATH}/export.sh
+        idf.py -C ultraled/examples/ultraled_basic set-target esp32p4
+        idf.py -C ultraled/examples/ultraled_basic build
+        idf.py -C ultraled/test_apps/ultraled set-target esp32p4
+        idf.py -C ultraled/test_apps/ultraled build
+        idf.py -C ultraled/test_apps/ultraled_perf set-target esp32p4
+        idf.py -C ultraled/test_apps/ultraled_perf build
+        idf.py -C ultraled/test_apps/ultraled_selective set-target esp32p4
+        idf.py -C ultraled/test_apps/ultraled_selective build

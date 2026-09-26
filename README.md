@@ -29,6 +29,7 @@ Each component is written in C for the ESP-IDF build system and follows a consis
 | **TMC2208** | Trinamic | UART/SPI | Stepper driver, 256µsteps, Stealthchop, Standalone | 3D printers, CNC, robotics |
 | **SGP30** | Sensirion | I²C | TVOC (ppb) + eCO2 (ppm), Baseline persistence, CRC-8 | Air quality monitoring, IAQ, ventilation |
 | **TV-B-Gone** | Mitch Altman | IR (RMT TX) | IR power-off sweep, NA/EU codes, Xiaomi code, one-shot or continuous mode | TV power control, universal remote, presentations |
+| **Ultraled** | Generic | PARLIO | 1–8 synchronized RGB strips, BitScrambler waveform generation, per-lane order/brightness | LED installations, signs, parallel animations |
 
 ---
 
@@ -259,6 +260,23 @@ NFC & RFID
 
 ---
 
+### Addressable LEDs
+
+#### Ultraled – Eight-Channel Addressable RGB LED Driver
+- **Interface:** 8-bit PARLIO TX with BitScrambler
+- **Target:** ESP32-P4 revision 3.0+ with ESP-IDF 6.0+
+- **Features:**
+  - Drives one to eight WS2812/WS2812B, SK6812 RGB, APA106, or SM16703 strips in lock-step
+  - Different GPIO, length, brightness, and RGB byte order per lane
+  - One shared LED model/timing profile per component handle; mixed strip protocols are not supported
+  - Compact DMA staging with hardware waveform expansion
+- **API:** Owned RGB framebuffers, pixel/range/fill/clear operations, brightness/order control, synchronous/asynchronous full or masked shows
+- **Use cases:** Parallel LED strips, synchronized installations, signage, and lighting effects
+
+See the [Ultraled documentation](ultraled/README.md) for timing, memory, wiring, and power requirements.
+
+---
+
 ## Installation & Usage
 
 ### Via Espressif Component Service
@@ -338,8 +356,9 @@ idf.py monitor
 ## CI/CD
 
 - **Build Testing:** Examples are automatically built and tested against:
-  - ESP-IDF versions: v5.3, v5.4, v5.5, and latest
+  - ESP-IDF versions: v5.3, v5.4, and v5.5 for the general matrix
   - Target chips: ESP32, ESP32-S3, ESP32-C3, ESP32-C6
+  - Ultraled separately with ESP-IDF 6.0 and ESP32-P4
   - All examples in component folders and the examples directory
 - **Component Publishing:** Components are automatically published to the registry on push to main
 

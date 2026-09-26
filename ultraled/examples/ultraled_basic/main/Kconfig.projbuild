@@ -1,0 +1,28 @@
+menu "Ultraled example configuration"
+
+config ULTRALED_EXAMPLE_CHANNEL_COUNT
+    int "Number of strips"
+    default 2
+    range 1 2
+
+config ULTRALED_EXAMPLE_GPIO_0
+    int "First strip data GPIO"
+    default 10
+    range 0 54
+
+config ULTRALED_EXAMPLE_GPIO_1
+    int "Second strip data GPIO"
+    default 11
+    range 0 54
+
+config ULTRALED_EXAMPLE_LED_COUNT_0
+    int "First strip LED count"
+    default 24
+    range 1 4096
+
+config ULTRALED_EXAMPLE_LED_COUNT_1
+    int "Second strip LED count"
+    default 12
+    range 1 4096
+
+endmenu
