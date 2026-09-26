@@ -1,0 +1,10 @@
+version: "0.3.0"
+description: Eight-channel addressable RGB LED driver using ESP32-P4 PARLIO and BitScrambler
+url: https://github.com/pedrominatel/esp-components/tree/main/ultraled
+repository: https://github.com/pedrominatel/esp-components.git
+documentation: https://github.com/pedrominatel/esp-components/tree/main/ultraled/README.md
+license: Apache-2.0
+targets:
+  - esp32p4
+dependencies:
+  idf: ">=6.0"
