@@ -1,4 +1,4 @@
-# Ultraled
+# UltraLED
 
 `ultraled` is an ESP-IDF 6.0+ component that drives one to eight 24-bit addressable RGB LED strips in parallel with the ESP32-P4 PARLIO TX peripheral and BitScrambler. `ultraled_show()` updates every configured strip in lock-step, while the masked show APIs can update any selected subset through the same serialized PARLIO TX unit.
 
