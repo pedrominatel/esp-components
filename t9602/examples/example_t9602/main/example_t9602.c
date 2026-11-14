@@ -16,7 +16,7 @@
 
 static const char *TAG = "T9602 example";
 
-i2c_master_dev_handle_t t9602_handle;
+t9602_handle_t t9602_handle;
 
 // task to read the sensor values
 void t9602_task(void *pvParameters)

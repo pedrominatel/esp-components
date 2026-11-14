@@ -6,6 +6,7 @@
  */
 
 #include <stdio.h>
+#include <inttypes.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -199,7 +200,7 @@ static bool parse_ndef_message(const uint8_t *data, size_t len, wifi_credentials
             id_len = data[pos++];
         }
         
-        ESP_LOGI(TAG, "Type Length: %u, Payload Length: %u, ID Length: %u", 
+        ESP_LOGI(TAG, "Type Length: %u, Payload Length: %" PRIu32 ", ID Length: %u",
                  type_len, payload_len, id_len);
         
         if (pos + type_len + id_len + payload_len > len) {
