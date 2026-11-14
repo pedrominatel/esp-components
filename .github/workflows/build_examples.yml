@@ -11,7 +11,7 @@ on:
 
 jobs:
   build:
-    name: Build examples with ESP-IDF ${{ matrix.idf_ver }} for ${{ matrix.idf_target }}
+    name: ${{ matrix.name }}
     runs-on: ubuntu-22.04
     container: espressif/idf:${{ matrix.idf_ver }}
     permissions:
@@ -19,8 +19,39 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        idf_ver: ["release-v5.3", "release-v5.4", "release-v5.5"]
-        idf_target: ["esp32", "esp32s3", "esp32c3", "esp32c6"]
+        include:
+          - name: Baseline ESP-IDF 4.4 components (ESP32)
+            idf_ver: release-v4.4
+            idf_target: esp32
+            paths: grove_lcd max17043 tmc2208
+          - name: Baseline ESP-IDF 5.0 components (ESP32)
+            idf_ver: release-v5.0
+            idf_target: esp32
+            paths: mc3479
+          - name: Baseline ESP-IDF 5.2 components (ESP32)
+            idf_ver: release-v5.2
+            idf_target: esp32
+            paths: lc709203
+          - name: Baseline ESP-IDF 5.3 components (ESP32)
+            idf_ver: release-v5.3
+            idf_target: esp32
+            paths: ddp hp203b lis3dh nt3h2111 sgp30 sht4x shtc3 st25dv t9602
+          - name: Baseline ESP-IDF 5.5 TV-B-Gone (ESP32-C3)
+            idf_ver: release-v5.5
+            idf_target: esp32c3
+            paths: tv-b-gone
+          - name: Baseline and latest ESP-IDF 6.1 Ultraled (ESP32-P4)
+            idf_ver: release-v6.1
+            idf_target: esp32p4
+            paths: ultraled
+          - name: Latest ESP-IDF 6.1 general components (ESP32)
+            idf_ver: release-v6.1
+            idf_target: esp32
+            paths: ddp grove_lcd hp203b lc709203 lis3dh max17043 mc3479 nt3h2111 sgp30 sht4x shtc3 st25dv t9602 tmc2208
+          - name: Latest ESP-IDF 6.1 TV-B-Gone (ESP32-C3)
+            idf_ver: release-v6.1
+            idf_target: esp32c3
+            paths: tv-b-gone
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -33,33 +64,12 @@ jobs:
         . ${IDF_PATH}/export.sh
         python3 -m pip install idf-build-apps==2.4.3
 
-    - name: Build examples for ${{ matrix.idf_target }}
+    - name: Build component applications
       shell: bash
       run: |
         . ${IDF_PATH}/export.sh
-        idf-build-apps build --target ${{ matrix.idf_target }} --recursive --build-dir build_${{ matrix.idf_target }}
-
-  build-ultraled:
-    name: Build Ultraled with ESP-IDF 6.0 for ESP32-P4
-    runs-on: ubuntu-22.04
-    container: espressif/idf:release-v6.0
-    permissions:
-      contents: read
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        submodules: 'recursive'
-
-    - name: Build Ultraled example and test applications
-      shell: bash
-      run: |
-        . ${IDF_PATH}/export.sh
-        idf.py -C ultraled/examples/ultraled_basic set-target esp32p4
-        idf.py -C ultraled/examples/ultraled_basic build
-        idf.py -C ultraled/test_apps/ultraled set-target esp32p4
-        idf.py -C ultraled/test_apps/ultraled build
-        idf.py -C ultraled/test_apps/ultraled_perf set-target esp32p4
-        idf.py -C ultraled/test_apps/ultraled_perf build
-        idf.py -C ultraled/test_apps/ultraled_selective set-target esp32p4
-        idf.py -C ultraled/test_apps/ultraled_selective build
+        idf-build-apps build \
+          --paths ${{ matrix.paths }} \
+          --target ${{ matrix.idf_target }} \
+          --recursive \
+          --build-dir build_${{ matrix.idf_target }}
