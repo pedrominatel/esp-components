@@ -260,13 +260,31 @@ NFC & RFID
 
 ---
 
+### Networking and Lighting Protocols
+
+#### DDP – Distributed Display Protocol v1 Server
+- **Interface:** UDP and TCP sockets
+- **Targets:** ESP-IDF targets with lwIP, ESP-IDF 5.3+
+- **Features:**
+  - DDP v1 data, Push, Query, and Reply packets
+  - Optional timecode headers and bounded 1440-byte payloads
+  - TCP stream fragmentation and multiple client support
+  - Duplicate suppression, sequence-gap detection, and runtime statistics
+  - Callback API independent of framebuffers and LED drivers
+- **API:** `ddp_server_start`, `ddp_server_stop`, `ddp_server_get_stats`
+- **Use cases:** xLights receivers, network-controlled displays, LED controllers, and protocol gateways
+
+See the [DDP documentation](ddp/README.md) for configuration and callback usage.
+
+---
+
 ### Addressable LEDs
 
-#### Ultraled – Eight-Channel Addressable RGB LED Driver
-- **Interface:** 8-bit PARLIO TX with BitScrambler
-- **Target:** ESP32-P4 revision 3.0+ with ESP-IDF 6.0+
+#### Ultraled – Sixteen-Channel Addressable RGB LED Driver
+- **Interface:** 16-bit PARLIO TX with BitScrambler
+- **Targets:** ESP32-P4 revision 3.0+ and ESP32-S31 with ESP-IDF 6.1+
 - **Features:**
-  - Drives one to eight WS2812/WS2812B, SK6812 RGB, APA106, or SM16703 strips in lock-step
+  - Drives one to sixteen WS2812/WS2812B, SK6812 RGB, APA106, or SM16703 strips in lock-step
   - Different GPIO, length, brightness, and RGB byte order per lane
   - One shared LED model/timing profile per component handle; mixed strip protocols are not supported
   - Compact DMA staging with hardware waveform expansion
