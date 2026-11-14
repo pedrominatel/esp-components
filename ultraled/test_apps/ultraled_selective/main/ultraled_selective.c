@@ -11,7 +11,7 @@
 #include "freertos/task.h"
 #include "ultraled.h"
 
-#define SELECTIVE_CHANNELS 8
+#define SELECTIVE_CHANNELS ULTRALED_MAX_CHANNELS
 #define SELECTIVE_LEDS 8
 #define SELECTIVE_INTERVAL_MS 20
 
@@ -20,6 +20,8 @@ static const char *TAG = "ultraled_selective";
 static const gpio_num_t s_gpios[SELECTIVE_CHANNELS] = {
     GPIO_NUM_22, GPIO_NUM_2, GPIO_NUM_3, GPIO_NUM_4,
     GPIO_NUM_5, GPIO_NUM_6, GPIO_NUM_32, GPIO_NUM_21,
+    GPIO_NUM_14, GPIO_NUM_15, GPIO_NUM_16, GPIO_NUM_17,
+    GPIO_NUM_18, GPIO_NUM_24, GPIO_NUM_25, GPIO_NUM_33,
 };
 
 void app_main(void)
@@ -45,7 +47,7 @@ void app_main(void)
         ultraled_rgb_t color = {
             .red = (uint8_t)(0x11U * (channel + 1U)),
             .green = (uint8_t)(0xffU - 0x11U * channel),
-            .blue = (uint8_t)(0x80U ^ (1U << channel)),
+            .blue = (uint8_t)(0x80U ^ (1U << (channel % 8U))),
         };
         ESP_ERROR_CHECK(ultraled_fill(leds, channel, color));
     }
@@ -53,7 +55,7 @@ void app_main(void)
     ESP_LOGI(TAG, "Cycling one selected lane every %d ms", SELECTIVE_INTERVAL_MS);
     size_t channel = 0;
     while (true) {
-        ESP_ERROR_CHECK(ultraled_show_mask(leds, (uint8_t)(1U << channel), ULTRALED_WAIT_FOREVER));
+        ESP_ERROR_CHECK(ultraled_show_mask(leds, (uint16_t)(1U << channel), ULTRALED_WAIT_FOREVER));
         channel = (channel + 1U) % SELECTIVE_CHANNELS;
         vTaskDelay(pdMS_TO_TICKS(SELECTIVE_INTERVAL_MS));
     }

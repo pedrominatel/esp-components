@@ -1,11 +1,11 @@
 # UltraLED
 
-`ultraled` is an ESP-IDF 6.0+ component that drives one to eight 24-bit addressable RGB LED strips in parallel with the ESP32-P4 PARLIO TX peripheral and BitScrambler. `ultraled_show()` updates every configured strip in lock-step, while the masked show APIs can update any selected subset through the same serialized PARLIO TX unit.
+`ultraled` is an ESP-IDF 6.1+ component that drives one to sixteen 24-bit addressable RGB LED strips in parallel with the ESP32-P4 or ESP32-S31 PARLIO TX peripheral and BitScrambler. `ultraled_show()` updates every configured strip in lock-step, while the masked show APIs can update any selected subset through the same serialized PARLIO TX unit.
 
 ## Requirements and limits
 
-- ESP32-P4 revision 3.0 or newer. `ultraled_new()` checks the actual silicon revision and returns `ESP_ERR_NOT_SUPPORTED` on older chips, whose BitScrambler cannot provide the variable-length output required here.
-- ESP-IDF 6.0 or newer.
+- ESP32-P4 revision 3.0 or newer, or ESP32-S31. On ESP32-P4, `ultraled_new()` checks the actual silicon revision and returns `ESP_ERR_NOT_SUPPORTED` on older chips, whose BitScrambler cannot provide the variable-length output required here.
+- ESP-IDF 6.1 or newer.
 - One active handle is expected. A handle exclusively owns one PARLIO TX unit and its TX BitScrambler channel until `ultraled_del()`.
 - All channels in one handle must use the same LED model and timing profile. Different channels may use different GPIOs, lengths, brightness values, pixel data, and color orders, but models with different clocks or wire timings cannot be mixed. This is a consequence of driving all lanes through one PARLIO TX unit and one BitScrambler program.
 - The component supports 24-bit RGB strips only. RGBW, HSV/effects, gamma correction, caller-owned buffers, asynchronous callbacks, and custom timings are outside its scope.
@@ -68,31 +68,31 @@ ESP_ERROR_CHECK(ultraled_set_pixels(leds, 1, 0, pixels, pixel_count));
 ESP_ERROR_CHECK(ultraled_show_mask_async(leds, 1U << 1));
 ```
 
-The mask must be nonzero and cannot contain unconfigured channel bits. Multiple selected channels, such as `(1U << 1) | (1U << 3)`, still advance in lock-step. Transactions remain serialized because the ESP32-P4 has one PARLIO TX unit. The encoded length and wire time are based on the longest selected channel.
+The 16-bit mask must be nonzero and cannot contain unconfigured channel bits. Multiple selected channels, such as `(1U << 1) | (1U << 12)`, still advance in lock-step. Transactions remain serialized through one PARLIO TX unit. The encoded length and wire time are based on the longest selected channel.
 
 Shorter selected strips transmit zero-valued pixels until the longest selected lane ends. Every frame is followed by at least 400 microseconds of low output for reset/latch.
 
 ## Memory use
 
-For channel lengths `N0...N7` and `Nmax = max(Ni)`, the principal allocations are:
+For channel lengths `N0...N15` and `Nmax = max(Ni)`, the principal allocations are:
 
 - canonical framebuffers: `3 * sum(Ni)` bytes;
-- compact DMA staging: `24 * Nmax` bytes;
-- reset DMA buffer: `ceil(clock_hz * 400 us)`, rounded up to 32 bytes;
+- compact DMA staging: `48 * Nmax` bytes;
+- reset DMA buffer: `2 * ceil(clock_hz * 400 us)`, rounded up to 32 bytes;
 - driver descriptors, handle state, and RTOS synchronization overhead.
 
-BitScrambler expands each staging byte into four PARLIO samples while transmitting, avoiding a `96 * Nmax`-byte encoded waveform buffer.
+BitScrambler expands each 16-bit staging mask into four PARLIO samples while transmitting, avoiding a `192 * Nmax`-byte encoded waveform buffer.
 
-At eight equal lanes, the canonical and staging allocations are each 11,520 bytes for 480 LEDs, or 23,040 bytes for 960 LEDs. WS2812 wire time is about 14.8 ms at 480 LEDs and 29.2 ms at 960 LEDs, including the 400 microsecond reset. The 480-LED configuration therefore has ample wire-time margin for a 30 FPS producer. APA106 cannot reach 30 FPS at 960 LEDs with its configured timing.
+At sixteen equal lanes, the canonical and staging allocations are each 23,040 bytes for 480 LEDs, or 46,080 bytes for 960 LEDs. WS2812 wire time is about 14.8 ms at 480 LEDs and 29.2 ms at 960 LEDs, including the 400 microsecond reset. The 480-LED configuration therefore has ample wire-time margin for a 30 FPS producer. APA106 cannot reach 30 FPS at 960 LEDs with its configured timing.
 
-The encoder uses cached channel orders, brightness fast paths, and a compact nibble lookup to transpose eight RGB values into PARLIO lane masks. Performance measurements should use `CONFIG_COMPILER_OPTIMIZATION_PERF`; the test application under `test_apps/ultraled_perf` benchmarks 480×8 submission, a 300-frame 30 FPS run, and informational 960×8 submission timing.
+The encoder uses cached channel orders and brightness fast paths to transpose sixteen RGB values into 16-bit PARLIO lane masks. Performance measurements should use `CONFIG_COMPILER_OPTIMIZATION_PERF`; the test application under `test_apps/ultraled_perf` benchmarks 480×16 submission, a 300-frame 30 FPS run, and informational 960×16 submission timing.
 
-The hardware test under `test_apps/ultraled_selective` rotates a masked eight-LED update across all eight reference GPIOs every 20 ms. It is intended for logic-analyzer regression testing: each transaction must contain 192 symbols on exactly one selected lane while all unselected lanes remain continuously low.
+The hardware test under `test_apps/ultraled_selective` rotates a masked eight-LED update across all sixteen reference GPIOs every 20 ms. It is intended for logic-analyzer regression testing: each transaction must contain 192 symbols on exactly one selected lane while all unselected lanes remain continuously low.
 
 ## Wiring and power
 
-Channel 0 through channel 7 map directly to PARLIO lane 0 through lane 7 and to the GPIOs passed in the configuration. GPIOs must be distinct and output-capable. Unused lanes are disconnected.
+Channel 0 through channel 15 map directly to PARLIO lane 0 through lane 15 and to the GPIOs passed in the configuration. GPIOs must be distinct and output-capable. Unused lanes are disconnected.
 
-Connect the ESP32-P4 ground and LED supply ground. Many 5 V strips need a 3.3-to-5 V logic-level shifter for reliable signaling. Size and inject external LED power for the maximum expected current; do not power a substantial strip through an ESP development board. A small series resistor on each data line and bulk capacitance at the strip supply are generally advisable.
+Connect the ESP ground and LED supply ground. Many 5 V strips need a 3.3-to-5 V logic-level shifter for reliable signaling. Size and inject external LED power for the maximum expected current; do not power a substantial strip through an ESP development board. A small series resistor on each data line and bulk capacitance at the strip supply are generally advisable.
 
 See [`examples/ultraled_basic`](examples/ultraled_basic) for a two-strip animation.

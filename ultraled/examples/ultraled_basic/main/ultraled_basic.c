@@ -61,7 +61,7 @@ void app_main(void)
         ESP_ERROR_CHECK(ultraled_clear(leds, animation_channel));
         ESP_ERROR_CHECK(ultraled_set_pixel(leds, animation_channel, position,
                                            (ultraled_rgb_t) { .green = 255 }));
-        ESP_ERROR_CHECK(ultraled_show_mask(leds, (uint8_t)(1U << animation_channel), 1000));
+        ESP_ERROR_CHECK(ultraled_show_mask(leds, (uint16_t)(1U << animation_channel), 1000));
         position = (position + 1) % animation_led_count;
         vTaskDelay(pdMS_TO_TICKS(80));
     }

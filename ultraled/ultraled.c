@@ -24,11 +24,16 @@
 #include "hal/parlio_periph.h"
 #include "soc/clk_tree_defs.h"
 #include "soc/gpio_sig_map.h"
+#include "sdkconfig.h"
 #include "ultraled_private.h"
 
 #define ULTRALED_RESET_US 400U
 #define ULTRALED_DMA_ALIGNMENT 32U
 #define ULTRALED_MAGIC 0x554c4544U
+#define ULTRALED_BYTES_PER_SAMPLE (ULTRALED_MAX_CHANNELS / 8U)
+#define ULTRALED_ENCODED_BYTES_PER_PIXEL (24U * ULTRALED_BYTES_PER_SAMPLE)
+
+_Static_assert(ULTRALED_MAX_CHANNELS == 16, "UltraLED PARLIO configuration requires 16 channels");
 
 BITSCRAMBLER_PROGRAM(ultraled_program_1h3h, "ws2812");
 BITSCRAMBLER_PROGRAM(ultraled_program_1h2h, "sk6812");
@@ -65,7 +70,7 @@ struct ultraled_t {
     bool decorated;
     bool in_flight;
     bool deleting;
-    uint8_t routed_mask;
+    uint16_t routed_mask;
 };
 
 static const ultraled_model_profile_t s_profiles[] = {
@@ -125,7 +130,7 @@ static esp_err_t validate_config(const ultraled_config_t *config, size_t *ret_lo
             longest = channel->led_count;
         }
     }
-    if (longest > SIZE_MAX / 24U) {
+    if (longest > SIZE_MAX / ULTRALED_ENCODED_BYTES_PER_PIXEL) {
         return ESP_ERR_INVALID_SIZE;
     }
     *ret_longest = longest;
@@ -180,11 +185,13 @@ esp_err_t ultraled_new(const ultraled_config_t *config, ultraled_handle_t *ret_h
     }
     *ret_handle = NULL;
 
+#if CONFIG_IDF_TARGET_ESP32P4
     esp_chip_info_t chip_info = {0};
     esp_chip_info(&chip_info);
     if (chip_info.revision < 300) {
         return ESP_ERR_NOT_SUPPORTED;
     }
+#endif
 
     size_t longest = 0;
     esp_err_t error = validate_config(config, &longest);
@@ -199,9 +206,10 @@ esp_err_t ultraled_new(const ultraled_config_t *config, ultraled_handle_t *ret_h
     handle->profile = &s_profiles[config->led_model];
     handle->channel_count = config->channel_count;
     handle->longest_channel = longest;
-    handle->staging_size = longest * 24U;
+    handle->staging_size = longest * ULTRALED_ENCODED_BYTES_PER_PIXEL;
     uint64_t reset_samples = ((uint64_t)handle->profile->clock_hz * ULTRALED_RESET_US + 999999U) / 1000000U;
-    handle->reset_size = (size_t)((reset_samples + ULTRALED_DMA_ALIGNMENT - 1U) & ~(ULTRALED_DMA_ALIGNMENT - 1U));
+    uint64_t reset_bytes = reset_samples * ULTRALED_BYTES_PER_SAMPLE;
+    handle->reset_size = (size_t)((reset_bytes + ULTRALED_DMA_ALIGNMENT - 1U) & ~(ULTRALED_DMA_ALIGNMENT - 1U));
 
     handle->frame_mutex = xSemaphoreCreateMutex();
     handle->tx_mutex = xSemaphoreCreateMutex();
@@ -258,7 +266,7 @@ esp_err_t ultraled_new(const ultraled_config_t *config, ultraled_handle_t *ret_h
         goto fail;
     }
     handle->enabled = true;
-    handle->routed_mask = (uint8_t)((1U << handle->channel_count) - 1U);
+    handle->routed_mask = (uint16_t)((1UL << handle->channel_count) - 1UL);
     handle->magic = ULTRALED_MAGIC;
     *ret_handle = handle;
     return ESP_OK;
@@ -457,18 +465,18 @@ static bool take_mutex_until(SemaphoreHandle_t mutex, int timeout_ms, int64_t de
     return xSemaphoreTake(mutex, ticks) == pdTRUE;
 }
 
-static uint8_t configured_channel_mask(ultraled_handle_t handle)
+static uint16_t configured_channel_mask(ultraled_handle_t handle)
 {
-    return (uint8_t)((1U << handle->channel_count) - 1U);
+    return (uint16_t)((1UL << handle->channel_count) - 1UL);
 }
 
-static bool valid_channel_mask(ultraled_handle_t handle, uint8_t channel_mask)
+static bool valid_channel_mask(ultraled_handle_t handle, uint16_t channel_mask)
 {
-    uint8_t configured = configured_channel_mask(handle);
-    return channel_mask != 0 && (channel_mask & (uint8_t)~configured) == 0;
+    uint16_t configured = configured_channel_mask(handle);
+    return channel_mask != 0 && (channel_mask & (uint16_t)~configured) == 0;
 }
 
-static size_t encode_frame(ultraled_handle_t handle, uint8_t channel_mask)
+static size_t encode_frame(ultraled_handle_t handle, uint16_t channel_mask)
 {
     ultraled_encoder_channel_t channels[ULTRALED_MAX_CHANNELS];
     size_t longest_selected = 0;
@@ -485,14 +493,14 @@ static size_t encode_frame(ultraled_handle_t handle, uint8_t channel_mask)
         }
     }
     ultraled_encode(channels, handle->channel_count, longest_selected, handle->staging);
-    return longest_selected * 24U;
+    return longest_selected * ULTRALED_ENCODED_BYTES_PER_PIXEL;
 }
 
-static esp_err_t route_channels(ultraled_handle_t handle, uint8_t channel_mask)
+static esp_err_t route_channels(ultraled_handle_t handle, uint16_t channel_mask)
 {
-    uint8_t changed = handle->routed_mask ^ channel_mask;
+    uint16_t changed = handle->routed_mask ^ channel_mask;
     for (size_t lane = 0; lane < handle->channel_count; ++lane) {
-        uint8_t lane_bit = (uint8_t)(1U << lane);
+        uint16_t lane_bit = (uint16_t)(1U << lane);
         if ((changed & lane_bit) == 0) {
             continue;
         }
@@ -549,7 +557,7 @@ static esp_err_t wait_done_locked(ultraled_handle_t handle, int timeout_ms)
     return error;
 }
 
-esp_err_t ultraled_show_mask_async(ultraled_handle_t handle, uint8_t channel_mask)
+esp_err_t ultraled_show_mask_async(ultraled_handle_t handle, uint16_t channel_mask)
 {
     if (!valid_handle(handle) || !valid_channel_mask(handle, channel_mask)) {
         return ESP_ERR_INVALID_ARG;
@@ -615,7 +623,7 @@ esp_err_t ultraled_wait_done(ultraled_handle_t handle, int timeout_ms)
     return error;
 }
 
-esp_err_t ultraled_show_mask(ultraled_handle_t handle, uint8_t channel_mask, int timeout_ms)
+esp_err_t ultraled_show_mask(ultraled_handle_t handle, uint16_t channel_mask, int timeout_ms)
 {
     if (!valid_handle(handle) || !valid_channel_mask(handle, channel_mask) ||
         timeout_ms < ULTRALED_WAIT_FOREVER) {
