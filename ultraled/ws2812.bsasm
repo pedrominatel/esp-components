@@ -1,13 +1,15 @@
 # SPDX-FileCopyrightText: 2026 Pedro Minatel
 # SPDX-License-Identifier: Apache-2.0
 
-# Expand each lane mask into four samples: 0 -> 1000, 1 -> 1110.
+# Expand each 16-lane mask into four samples: 0 -> 1000, 1 -> 1110.
 cfg prefetch false
 cfg eof_on upstream
 cfg trailing_bytes 1
 
 loop:
-    read 8,
-    set 0..7 H, set 8..15 56..63, set 16..23 56..63, set 24..31 L,
+    read 16,
+    set 0..15 H, set 16..31 48..63,
+    write 32
+    set 0..15 48..63, set 16..31 L,
     write 32,
     jmp loop

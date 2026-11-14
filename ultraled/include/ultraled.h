@@ -15,7 +15,7 @@
 extern "C" {
 #endif
 
-#define ULTRALED_MAX_CHANNELS 8
+#define ULTRALED_MAX_CHANNELS 16
 #define ULTRALED_WAIT_FOREVER (-1)
 
 typedef struct ultraled_t *ultraled_handle_t;
@@ -85,7 +85,7 @@ esp_err_t ultraled_show(ultraled_handle_t handle, int timeout_ms);
  * retain the previously latched pixels. The mask must be nonzero and may not
  * select an unconfigured channel. A timeout of -1 waits forever.
  */
-esp_err_t ultraled_show_mask(ultraled_handle_t handle, uint8_t channel_mask, int timeout_ms);
+esp_err_t ultraled_show_mask(ultraled_handle_t handle, uint16_t channel_mask, int timeout_ms);
 
 /**
  * Encode and queue every configured channel, returning before transmission completes.
@@ -98,7 +98,7 @@ esp_err_t ultraled_show_async(ultraled_handle_t handle);
  * Asynchronously transmit only the channels selected by channel_mask.
  * Mask validation and busy behavior match ultraled_show_mask().
  */
-esp_err_t ultraled_show_mask_async(ultraled_handle_t handle, uint8_t channel_mask);
+esp_err_t ultraled_show_mask_async(ultraled_handle_t handle, uint16_t channel_mask);
 
 /** Wait for an asynchronous transmission. A timeout of -1 waits forever. Not callable from an ISR. */
 esp_err_t ultraled_wait_done(ultraled_handle_t handle, int timeout_ms);

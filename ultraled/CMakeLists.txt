@@ -3,7 +3,7 @@ idf_component_register(
     INCLUDE_DIRS "include"
     PRIV_INCLUDE_DIRS "."
     REQUIRES esp_driver_parlio esp_driver_bitscrambler esp_driver_gpio esp_hw_support esp_timer
-    REQUIRED_IDF_TARGETS esp32p4
+    REQUIRED_IDF_TARGETS esp32p4 esp32s31
 )
 
 target_bitscrambler_add_src("ws2812.bsasm")

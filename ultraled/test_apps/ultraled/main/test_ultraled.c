@@ -27,10 +27,23 @@ static const uint8_t s_order_indices[][3] = {
     [ULTRALED_COLOR_ORDER_BGR] = {2, 1, 0},
 };
 
-static void expected_component(uint8_t component, uint8_t lane_mask, uint8_t *output)
+static void write_lane_mask(uint8_t **output, uint16_t lane_mask)
+{
+    memcpy(*output, &lane_mask, sizeof(lane_mask));
+    *output += sizeof(lane_mask);
+}
+
+static uint16_t read_lane_mask(const uint8_t *output, size_t sample)
+{
+    uint16_t lane_mask = 0;
+    memcpy(&lane_mask, output + sample * sizeof(lane_mask), sizeof(lane_mask));
+    return lane_mask;
+}
+
+static void expected_component(uint8_t component, uint16_t lane_mask, uint8_t *output)
 {
     for (int bit = 7; bit >= 0; --bit) {
-        *output++ = (component & (1U << bit)) ? lane_mask : 0;
+        write_lane_mask(&output, (component & (1U << bit)) ? lane_mask : 0);
     }
 }
 
@@ -45,16 +58,16 @@ static void encode_reference(const ultraled_encoder_channel_t *channels, size_t 
     for (size_t pixel = 0; pixel < longest_channel; ++pixel) {
         for (size_t component = 0; component < 3; ++component) {
             for (int bit = 7; bit >= 0; --bit) {
-                uint8_t lanes = 0;
+                uint16_t lanes = 0;
                 for (size_t lane = 0; lane < channel_count; ++lane) {
                     if (pixel < channels[lane].led_count) {
                         const uint8_t *rgb = (const uint8_t *)&channels[lane].pixels[pixel];
                         uint8_t value = scale_reference(rgb[channels[lane].component_indices[component]],
                                                         channels[lane].brightness);
-                        lanes |= ((value >> bit) & 1U) << lane;
+                        lanes |= (uint16_t)(((value >> bit) & 1U) << lane);
                     }
                 }
-                *output++ = lanes;
+                write_lane_mask(&output, lanes);
             }
         }
     }
@@ -75,11 +88,11 @@ TEST_CASE("encoder supports every color order", "[ultraled][encoder]")
             .component_indices = s_order_indices[orders[order]],
             .brightness = 255,
         };
-        uint8_t actual[24] = {0};
-        uint8_t expected[24] = {0};
+        uint8_t actual[48] = {0};
+        uint8_t expected[48] = {0};
         ultraled_encode(&channel, 1, 1, actual);
         for (size_t component = 0; component < 3; ++component) {
-            expected_component(rgb[s_order_indices[orders[order]][component]], 1, &expected[component * 8]);
+            expected_component(rgb[s_order_indices[orders[order]][component]], 1, &expected[component * 16]);
         }
         TEST_ASSERT_EQUAL_HEX8_ARRAY(expected, actual, sizeof(actual));
     }
@@ -94,15 +107,15 @@ TEST_CASE("encoder handles brightness channel lengths and inactive lanes", "[ult
         {.pixels = pixels0, .led_count = 2, .component_indices = s_order_indices[ULTRALED_COLOR_ORDER_RGB], .brightness = 255},
         {.pixels = pixels1, .led_count = 1, .component_indices = s_order_indices[ULTRALED_COLOR_ORDER_RGB], .brightness = 0},
     };
-    uint8_t output[48];
+    uint8_t output[96];
     memset(output, 0xa5, sizeof(output));
     ultraled_encode(channels, 2, 2, output);
-    for (size_t i = 0; i < sizeof(output); ++i) {
-        TEST_ASSERT_EQUAL_HEX8(0, output[i] & 0xfe); // lanes 1..7 stay low
+    for (size_t sample = 0; sample < sizeof(output) / sizeof(uint16_t); ++sample) {
+        TEST_ASSERT_EQUAL_HEX16(0, read_lane_mask(output, sample) & 0xfffeU); // lanes 1..15 stay low
     }
-    TEST_ASSERT_EQUAL_HEX8(1, output[0]);
-    TEST_ASSERT_EQUAL_HEX8(1, output[7]);
-    TEST_ASSERT_EQUAL_HEX8(1, output[24 + 8]);
+    TEST_ASSERT_EQUAL_HEX16(1, read_lane_mask(output, 0));
+    TEST_ASSERT_EQUAL_HEX16(1, read_lane_mask(output, 7));
+    TEST_ASSERT_EQUAL_HEX16(1, read_lane_mask(output, 24 + 8));
     channels[0] = (ultraled_encoder_channel_t) {
         .pixels = black, .led_count = 1,
         .component_indices = s_order_indices[ULTRALED_COLOR_ORDER_RGB], .brightness = 128,
@@ -110,27 +123,31 @@ TEST_CASE("encoder handles brightness channel lengths and inactive lanes", "[ult
     ultraled_rgb_t half = {.red = 255};
     channels[0].pixels = &half;
     ultraled_encode(channels, 1, 1, output);
-    TEST_ASSERT_EQUAL_HEX8(1, output[0]); // rounded 255 * 128 / 255 = 128
-    for (size_t i = 1; i < 8; ++i) TEST_ASSERT_EQUAL_HEX8(0, output[i]);
+    TEST_ASSERT_EQUAL_HEX16(1, read_lane_mask(output, 0)); // rounded 255 * 128 / 255 = 128
+    for (size_t sample = 1; sample < 8; ++sample) {
+        TEST_ASSERT_EQUAL_HEX16(0, read_lane_mask(output, sample));
+    }
 }
 
-TEST_CASE("encoder transposes all eight lanes", "[ultraled][encoder]")
+TEST_CASE("encoder transposes all sixteen lanes", "[ultraled][encoder]")
 {
     ultraled_rgb_t pixels[ULTRALED_MAX_CHANNELS];
     ultraled_encoder_channel_t channels[ULTRALED_MAX_CHANNELS];
     for (size_t lane = 0; lane < ULTRALED_MAX_CHANNELS; ++lane) {
-        pixels[lane] = (ultraled_rgb_t) {.red = (uint8_t)(0x80U >> lane)};
+        pixels[lane] = (ultraled_rgb_t) {.red = (uint8_t)(0x80U >> (lane % 8U))};
         channels[lane] = (ultraled_encoder_channel_t) {
             .pixels = &pixels[lane], .led_count = 1,
             .component_indices = s_order_indices[ULTRALED_COLOR_ORDER_RGB], .brightness = 255,
         };
     }
-    uint8_t output[24] = {0};
+    uint8_t output[48] = {0};
     ultraled_encode(channels, ULTRALED_MAX_CHANNELS, 1, output);
     for (size_t bit = 0; bit < 8; ++bit) {
-        TEST_ASSERT_EQUAL_HEX8(1U << bit, output[bit]);
+        TEST_ASSERT_EQUAL_HEX16((1U << bit) | (1U << (bit + 8U)), read_lane_mask(output, bit));
     }
-    for (size_t i = 8; i < sizeof(output); ++i) TEST_ASSERT_EQUAL_HEX8(0, output[i]);
+    for (size_t sample = 8; sample < 24; ++sample) {
+        TEST_ASSERT_EQUAL_HEX16(0, read_lane_mask(output, sample));
+    }
 }
 
 TEST_CASE("optimized encoder matches scalar reference for large mixed frames", "[ultraled][encoder]")
@@ -141,7 +158,7 @@ TEST_CASE("optimized encoder matches scalar reference for large mixed frames", "
 
     for (size_t length_index = 0; length_index < sizeof(lengths) / sizeof(lengths[0]); ++length_index) {
         size_t longest = lengths[length_index];
-        size_t output_size = longest * 24U;
+        size_t output_size = longest * 48U;
         uint8_t *actual = malloc(output_size);
         uint8_t *expected = malloc(output_size);
         TEST_ASSERT_NOT_NULL(actual);
@@ -188,7 +205,7 @@ TEST_CASE("optimized encoder matches scalar reference for large mixed frames", "
 
 static void check_program(const void *program, bool three_high)
 {
-    const uint8_t input[] = {0x00, 0xff, 0x01, 0x80, 0x55, 0xaa, 0x3c, 0xc3};
+    const uint16_t input[] = {0x0000, 0xffff, 0x0001, 0x8000, 0x5555, 0xaaaa, 0x3cc3, 0xc33c};
     const size_t output_capacity = 64;
     uint8_t *in = heap_caps_aligned_alloc(64, sizeof(input), MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
     uint8_t *out = heap_caps_aligned_calloc(64, 1, output_capacity, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
@@ -201,11 +218,11 @@ static void check_program(const void *program, bool three_high)
     size_t output_size = 0;
     TEST_ESP_OK(bitscrambler_loopback_run(bs, in, sizeof(input), out, output_capacity, &output_size));
     TEST_ASSERT_EQUAL(sizeof(input) * 4, output_size);
-    for (size_t i = 0; i < sizeof(input); ++i) {
-        TEST_ASSERT_EQUAL_HEX8(0xff, out[i * 4]);
-        TEST_ASSERT_EQUAL_HEX8(input[i], out[i * 4 + 1]);
-        TEST_ASSERT_EQUAL_HEX8(three_high ? input[i] : 0, out[i * 4 + 2]);
-        TEST_ASSERT_EQUAL_HEX8(0, out[i * 4 + 3]);
+    for (size_t i = 0; i < sizeof(input) / sizeof(input[0]); ++i) {
+        TEST_ASSERT_EQUAL_HEX16(0xffff, read_lane_mask(out, i * 4));
+        TEST_ASSERT_EQUAL_HEX16(input[i], read_lane_mask(out, i * 4 + 1));
+        TEST_ASSERT_EQUAL_HEX16(three_high ? input[i] : 0, read_lane_mask(out, i * 4 + 2));
+        TEST_ASSERT_EQUAL_HEX16(0, read_lane_mask(out, i * 4 + 3));
     }
     bitscrambler_free(bs);
     free(in);
@@ -234,7 +251,7 @@ TEST_CASE("configuration rejects bad channels GPIOs and overflow", "[ultraled]")
     config.channels[0].gpio_num = GPIO_NUM_NC;
     TEST_ASSERT_EQUAL(ESP_ERR_INVALID_ARG, ultraled_new(&config, &handle));
     config.channels[0].gpio_num = GPIO_NUM_10;
-    config.channels[0].led_count = SIZE_MAX / 24U + 1U;
+    config.channels[0].led_count = SIZE_MAX / 48U + 1U;
     TEST_ASSERT_EQUAL(ESP_ERR_INVALID_SIZE, ultraled_new(&config, &handle));
 }
 

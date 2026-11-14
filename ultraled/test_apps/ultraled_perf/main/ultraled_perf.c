@@ -15,7 +15,7 @@
 #include "freertos/task.h"
 #include "ultraled.h"
 
-#define PERF_CHANNELS 8
+#define PERF_CHANNELS ULTRALED_MAX_CHANNELS
 #define PERF_LEDS 480
 #define PERF_SAMPLES 100
 #define PERF_FRAMES 300
@@ -27,6 +27,8 @@ static const char *TAG = "ultraled_perf";
 static const gpio_num_t s_gpios[PERF_CHANNELS] = {
     GPIO_NUM_22, GPIO_NUM_2, GPIO_NUM_3, GPIO_NUM_4,
     GPIO_NUM_5, GPIO_NUM_6, GPIO_NUM_32, GPIO_NUM_21,
+    GPIO_NUM_14, GPIO_NUM_15, GPIO_NUM_16, GPIO_NUM_17,
+    GPIO_NUM_18, GPIO_NUM_24, GPIO_NUM_25, GPIO_NUM_33,
 };
 
 static int compare_i64(const void *left, const void *right)
@@ -120,14 +122,14 @@ void app_main(void)
     ultraled_handle_t handle = NULL;
     ESP_ERROR_CHECK(ultraled_new(&config, &handle));
     load_frame(handle, pixels, PERF_LEDS, 0);
-    benchmark_submit(handle, "480x8 default/full brightness");
+    benchmark_submit(handle, "480x16 default/full brightness");
 
     for (size_t lane = 0; lane < PERF_CHANNELS; ++lane) {
         ESP_ERROR_CHECK(ultraled_set_color_order(handle, lane,
             (ultraled_color_order_t)(ULTRALED_COLOR_ORDER_RGB + lane % 6U)));
-        ESP_ERROR_CHECK(ultraled_set_brightness(handle, lane, (uint8_t)(1U + lane * 36U)));
+        ESP_ERROR_CHECK(ultraled_set_brightness(handle, lane, (uint8_t)(1U + lane * 16U)));
     }
-    benchmark_submit(handle, "480x8 mixed order/brightness");
+    benchmark_submit(handle, "480x16 mixed order/brightness");
     run_paced_frames(handle, pixels);
     ESP_ERROR_CHECK(ultraled_del(handle));
 
@@ -137,7 +139,7 @@ void app_main(void)
     int64_t start = esp_timer_get_time();
     ESP_ERROR_CHECK(ultraled_show_async(handle));
     int64_t submit_us = esp_timer_get_time() - start;
-    ESP_LOGI(TAG, "960x8 submit=%" PRId64 " us (informational)", submit_us);
+    ESP_LOGI(TAG, "960x16 submit=%" PRId64 " us (informational)", submit_us);
     ESP_ERROR_CHECK(ultraled_wait_done(handle, ULTRALED_WAIT_FOREVER));
     ESP_ERROR_CHECK(ultraled_del(handle));
     free(pixels);

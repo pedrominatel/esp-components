@@ -9,13 +9,7 @@
 
 _Static_assert(sizeof(ultraled_rgb_t) == 3, "ultraled_rgb_t must be packed RGB888");
 
-/* Expand a nibble into the low bit of four consecutive output bytes, MSB first. */
-static const uint32_t s_expand_nibble[16] = {
-    0x00000000U, 0x01000000U, 0x00010000U, 0x01010000U,
-    0x00000100U, 0x01000100U, 0x00010100U, 0x01010100U,
-    0x00000001U, 0x01000001U, 0x00010001U, 0x01010001U,
-    0x00000101U, 0x01000101U, 0x00010101U, 0x01010101U,
-};
+_Static_assert(ULTRALED_MAX_CHANNELS == 16, "Encoder lane masks must be 16 bits");
 
 static uint8_t scale_component(uint8_t value, uint8_t brightness)
 {
@@ -50,16 +44,16 @@ void ultraled_encode(const ultraled_encoder_channel_t *channels, size_t channel_
             }
         }
         for (size_t component = 0; component < 3; ++component) {
-            uint32_t high_planes = 0;
-            uint32_t low_planes = 0;
-            for (size_t lane = 0; lane < channel_count; ++lane) {
-                uint8_t value = wire[lane][component];
-                high_planes |= s_expand_nibble[value >> 4] << lane;
-                low_planes |= s_expand_nibble[value & 0x0fU] << lane;
+            for (int bit = 7; bit >= 0; --bit) {
+                uint16_t lane_mask = 0;
+                for (size_t lane = 0; lane < channel_count; ++lane) {
+                    if ((wire[lane][component] & (1U << bit)) != 0) {
+                        lane_mask |= (uint16_t)(1U << lane);
+                    }
+                }
+                memcpy(output, &lane_mask, sizeof(lane_mask));
+                output += sizeof(lane_mask);
             }
-            memcpy(output, &high_planes, sizeof(high_planes));
-            memcpy(output + sizeof(high_planes), &low_planes, sizeof(low_planes));
-            output += 8;
         }
     }
 }
