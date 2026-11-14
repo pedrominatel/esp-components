@@ -1,0 +1,10 @@
+version: "0.1.0"
+description: Distributed Display Protocol v1 server for ESP-IDF with UDP and TCP support
+url: https://github.com/pedrominatel/esp-components/tree/main/ddp
+repository: git://github.com/pedrominatel/esp-components.git
+repository_info:
+  path: ddp
+documentation: https://github.com/pedrominatel/esp-components/tree/main/ddp/README.md
+license: Apache-2.0
+dependencies:
+  idf: ">=5.3"
