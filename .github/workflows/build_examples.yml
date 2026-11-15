@@ -20,18 +20,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Baseline ESP-IDF 4.4 components (ESP32)
-            idf_ver: release-v4.4
-            idf_target: esp32
-            paths: grove_lcd max17043 tmc2208
-          - name: Baseline ESP-IDF 5.0 components (ESP32)
-            idf_ver: release-v5.0
-            idf_target: esp32
-            paths: mc3479
           - name: Baseline ESP-IDF 5.2 components (ESP32)
             idf_ver: release-v5.2
             idf_target: esp32
-            paths: lc709203
+            paths: grove_lcd lc709203 max17043
           - name: Baseline ESP-IDF 5.3 components (ESP32)
             idf_ver: release-v5.3
             idf_target: esp32
