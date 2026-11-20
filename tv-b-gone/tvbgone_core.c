@@ -364,6 +364,12 @@ static esp_err_t init_hardware(void)
         .mem_block_symbols = RMT_MEM_BLOCK_SYMBOLS,
         .trans_queue_depth = 1,
         .intr_priority = 0,
+        .flags = {
+            .invert_out = 0,
+            .with_dma = 0,
+            .allow_pd = 0,
+            .init_level = LOW,
+        },
     };
     rmt_copy_encoder_config_t copy_encoder_cfg = {};
     esp_err_t err;
